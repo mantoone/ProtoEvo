@@ -14,6 +14,8 @@ public class JCudaKernelRunner {
     private CUfunction function;
     private final int blockSizeX, blockSizeY;
     private final String kernelName, functionName;
+    private int executions = 0;
+    private long totalTime = 0;
     private CUdeviceptr devicePixels = new CUdeviceptr();
     private CUdeviceptr deviceOutput = new CUdeviceptr();
 
@@ -65,6 +67,12 @@ public class JCudaKernelRunner {
             function = new CUfunction();
             cuModuleGetFunction(function, module, functionName);
 
+            final int pxLen = 2048*2048;
+            cuMemAlloc(this.devicePixels, (long) pxLen * Sizeof.BYTE);
+
+            final int resLen = 2048*2048;
+            cuMemAlloc(this.deviceOutput, (long) resLen * Sizeof.BYTE);
+
         } catch (IOException e) {
             if (!new File(kernelName).exists())
                 throw new RuntimeException("Was unable to compile " + kernelName + ":\n" + e);
@@ -84,6 +92,8 @@ public class JCudaKernelRunner {
     }
 
     public byte[] processImage(byte[] pixels, byte[] result, int w, int h, int c) {
+
+        long startTime = System.nanoTime();
         cuMemcpyHtoD(this.devicePixels, Pointer.to(pixels), (long) pixels.length * Sizeof.BYTE);
 
         Pointer kernelParameters = Pointer.to(
@@ -97,6 +107,8 @@ public class JCudaKernelRunner {
 
         // Set up the kernel parameters: A pointer to an array
         // of pointers which point to the actual values.
+
+        // Calculate time taken
 
         // Call the kernel function.
         int gridSizeX = (int) Math.ceil((double) w / blockSizeX);
@@ -113,8 +125,14 @@ public class JCudaKernelRunner {
         // Allocate host output memory and copy the device output
         // to the host.
         cuMemcpyDtoH(Pointer.to(result), deviceOutput, (long) result.length * Sizeof.BYTE);
-        //cuMemFree(devicePixels);
-        //cuMemFree(deviceOutput);
+        long endTime = System.nanoTime();
+        totalTime += endTime - startTime;
+        executions++;
+        if (executions > 30) {
+            System.out.println("Average kernel time: " + totalTime / 1000000 / executions + "ms");
+            executions = 0;
+            totalTime = 0;
+        }
 
         return result;
     }
