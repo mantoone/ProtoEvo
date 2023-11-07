@@ -14,6 +14,8 @@ public class JCudaKernelRunner {
     private CUfunction function;
     private final int blockSizeX, blockSizeY;
     private final String kernelName, functionName;
+    private CUdeviceptr devicePixels = new CUdeviceptr();
+    private CUdeviceptr deviceOutput = new CUdeviceptr();
 
     public static boolean cudaAvailable() {
         try {
@@ -82,23 +84,14 @@ public class JCudaKernelRunner {
     }
 
     public byte[] processImage(byte[] pixels, byte[] result, int w, int h, int c) {
-
-        // Allocate the device input data, and copy the
-        // host input data to the device
-        CUdeviceptr devicePixels = new CUdeviceptr();
-        cuMemAlloc(devicePixels, (long) pixels.length * Sizeof.BYTE);
-        cuMemcpyHtoD(devicePixels, Pointer.to(pixels), (long) pixels.length * Sizeof.BYTE);
-
-        // Allocate device output memory
-        CUdeviceptr deviceOutput = new CUdeviceptr();
-        cuMemAlloc(deviceOutput, (long) result.length * Sizeof.BYTE);
+        cuMemcpyHtoD(this.devicePixels, Pointer.to(pixels), (long) pixels.length * Sizeof.BYTE);
 
         Pointer kernelParameters = Pointer.to(
                 Pointer.to(new int[]{w}),
                 Pointer.to(new int[]{h}),
                 Pointer.to(new int[]{c}),
-                Pointer.to(devicePixels),
-                Pointer.to(deviceOutput)
+                Pointer.to(this.devicePixels),
+                Pointer.to(this.deviceOutput)
         );
 
 
@@ -120,8 +113,8 @@ public class JCudaKernelRunner {
         // Allocate host output memory and copy the device output
         // to the host.
         cuMemcpyDtoH(Pointer.to(result), deviceOutput, (long) result.length * Sizeof.BYTE);
-        cuMemFree(devicePixels);
-        cuMemFree(deviceOutput);
+        //cuMemFree(devicePixels);
+        //cuMemFree(deviceOutput);
 
         return result;
     }
