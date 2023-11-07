@@ -6,6 +6,12 @@ import jcuda.driver.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
 
 import static jcuda.driver.JCudaDriver.*;
 
@@ -222,6 +228,111 @@ public class JCudaKernelRunner {
         }
     }
 
+    public static void kernelCPUPar(
+    int width,
+    int height,
+    int channels,
+    byte[] img,
+    byte[] result)
+{
+    float world_radius = 30.0f;
+
+    float cellSizeX = 2 * world_radius / ((float) width);
+    float cellSizeY = 2 * world_radius / ((float) height);
+
+    int numProcessors = Runtime.getRuntime().availableProcessors();
+    ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
+    List<Future<?>> futures = new ArrayList<>();
+
+    int chunkSize = height / numProcessors;
+
+    for (int i = 0; i < numProcessors; i++) {
+        int startY = i * chunkSize;
+        int endY = (i == numProcessors - 1) ? height : (i + 1) * chunkSize;
+
+        futures.add(executor.submit(() -> {
+            for (int y = startY; y < endY; y++) {
+                for (int x = 0; x < width; x++) {
+                    float world_x = -world_radius + cellSizeX * x;
+                    float world_y = -world_radius + cellSizeY * y;
+                    float dist2_to_world_centre = world_x * world_x + world_y * world_y;
+
+                    float decay = 0.0f;
+
+                    float void_p = 0.9f;
+                    if (dist2_to_world_centre > void_p * void_p * world_radius * world_radius) {
+                        float dist_to_world_centre = (float) Math.sqrt(dist2_to_world_centre);
+                        decay = 0.9995f * (1.0f
+                                - (dist_to_world_centre - void_p * world_radius) / ((1.0f - void_p) * world_radius));
+                        if (decay < 0.0f) {
+                            decay = 0.0f;
+                        }
+                    } else {
+                        decay = 0.995f;
+                    }
+
+                    int alpha_channel = channels - 1;
+
+                    float final_alpha = 0.0f;
+                    int radius = (FILTER_SIZE - 1) / 2;
+                    for (int i_ = -radius; i_ <= radius; i_++) {
+                        for (int j = -radius; j <= radius; j++) {
+                            int x_ = x + i_;
+                            int y_ = y + j;
+                            if (x_ < 0 || x_ >= width || y_ < 0 || y_ >= height) {
+                                continue;
+                            }
+                            float val = (float) (img[(y_ * width + x_) * channels + alpha_channel] & 0xFF);
+                            final_alpha += val / 255.0f;
+                        }
+                    }
+                    final_alpha = decay * final_alpha / ((float) (FILTER_SIZE * FILTER_SIZE));
+                    result[(y * width + x) * channels + alpha_channel] = (byte) (255 * final_alpha);
+
+                    if (final_alpha < 5.0f / 255.0f) {
+                        for (int i_ = 0; i_ < channels - 1; i_++) {
+                            result[(y * width + x) * channels + i_] = 0;
+                        }
+                    }
+
+                    float final_value = 0.0f;
+                    for (int c = 0; c < channels - 1; c++) {
+                        final_value = 0.0f;
+                        for (int i_ = -radius; i_ <= radius; i_++) {
+                            for (int j = -radius; j <= radius; j++) {
+                                int x_ = x + i_;
+                                int y_ = y + j;
+                                if (x_ < 0 || x_ >= width || y_ < 0 || y_ >= height) {
+                                    continue;
+                                }
+                                float alpha = decay * ((float) (img[(y_ * width + x_) * channels + alpha_channel] & 0xFF))
+                                        / 255.0f;
+                                float val = ((float) (img[(y_ * width + x_) * channels + c] & 0xFF)) / 255.0f;
+                                final_value += val * alpha;
+                            }
+                        }
+                        final_value = final_value / ((float) (FILTER_SIZE * FILTER_SIZE));
+                        final_value = decay * 255 * final_value / final_alpha;
+
+                        result[(y * width + x) * channels + c] = (byte) (final_value);
+                    }
+                }
+            }
+        }));
+    }
+
+    // Wait for all tasks to complete
+    for (Future<?> future : futures) {
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    executor.shutdown();
+}
+
     public static void kernel(
             int width,
             int height,
@@ -351,7 +462,8 @@ public class JCudaKernelRunner {
         // Benchmark the kernel
         long startTime = System.nanoTime();
         // kernel(w, h, c, pixels, result);
-        kernelCPU(w, h, c, pixels, result);
+        //kernelCPU(w, h, c, pixels, result);
+        kernelCPUPar(w, h, c, pixels, result);
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000;
         System.out.println("Kernel took " + duration + "ms");
