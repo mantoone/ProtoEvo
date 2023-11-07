@@ -22,6 +22,8 @@ public class JCudaKernelRunner {
     private CUfunction function;
     private final int blockSizeX, blockSizeY;
     private final String kernelName, functionName;
+    private int executions = 0;
+    private long totalTime = 0;
     private CUdeviceptr devicePixels = new CUdeviceptr();
     private CUdeviceptr deviceOutput = new CUdeviceptr();
 
@@ -464,9 +466,15 @@ public class JCudaKernelRunner {
         // kernel(w, h, c, pixels, result);
         //kernelCPU(w, h, c, pixels, result);
         kernelCPUPar(w, h, c, pixels, result);
+
         long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000000;
-        System.out.println("Kernel took " + duration + "ms");
+        totalTime += endTime - startTime;
+        executions++;
+        if (executions > 30) {
+            System.out.println("Average kernel time: " + totalTime / 1000000 / executions + "ms");
+            executions = 0;
+            totalTime = 0;
+        }
 
         return result;
     }
