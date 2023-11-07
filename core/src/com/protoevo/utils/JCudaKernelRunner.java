@@ -11,6 +11,8 @@ import static jcuda.driver.JCudaDriver.*;
 
 public class JCudaKernelRunner {
 
+    static final int FILTER_SIZE = 3;
+
     private CUfunction function;
     private final int blockSizeX, blockSizeY;
     private final String kernelName, functionName;
@@ -65,9 +67,24 @@ public class JCudaKernelRunner {
             function = new CUfunction();
             cuModuleGetFunction(function, module, functionName);
 
+            // Allocate the device input data, and copy the
+            // host input data to the device
+            /*
+            int pxLen = 2048*2048;
+            cuMemAlloc(this.devicePixels, (long) pxLen * Sizeof.BYTE);
+
+            // Allocate device output memory
+            int resLen = 2048*2048;
+            cuMemAlloc(this.deviceOutput, (long) resLen * Sizeof.BYTE);
+            System.out.println("Mallocs done");
+             */
+
         } catch (IOException e) {
             if (!new File(kernelName).exists())
                 throw new RuntimeException("Was unable to compile " + kernelName + ":\n" + e);
+            else {
+                System.out.println("error\n" + e);
+            };
         }
     }
 
@@ -83,6 +100,7 @@ public class JCudaKernelRunner {
         return processImage(pixels, result, w, h, 4);
     }
 
+    /*
     public byte[] processImage(byte[] pixels, byte[] result, int w, int h, int c) {
         cuMemcpyHtoD(this.devicePixels, Pointer.to(pixels), (long) pixels.length * Sizeof.BYTE);
 
@@ -118,4 +136,91 @@ public class JCudaKernelRunner {
 
         return result;
     }
+    */
+
+    public static void kernelCPU(
+            int width,
+            int height,
+            int channels,
+            byte[] img,
+            byte[] result)
+    {
+        float world_radius = 30.0f;
+
+        float cellSizeX = 2 * world_radius / ((float) width);
+        float cellSizeY = 2 * world_radius / ((float) height);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                float world_x = -world_radius + cellSizeX * x;
+                float world_y = -world_radius + cellSizeY * y;
+                float dist2_to_world_centre = world_x*world_x + world_y*world_y;
+
+                float decay = 0.0f;
+
+                float void_p = 0.9f;
+                if (dist2_to_world_centre > void_p * void_p * world_radius * world_radius) {
+                    float dist_to_world_centre = (float) Math.sqrt(dist2_to_world_centre);
+                    decay = 0.9995f * (1.0f - (dist_to_world_centre - void_p * world_radius) / ((1.0f - void_p) * world_radius));
+                    if (decay < 0.0f) {
+                        decay = 0.0f;
+                    }
+                } else {
+                    decay = 0.995f;
+                }
+
+                int alpha_channel = channels - 1;
+
+                float final_alpha = 0.0f;
+                int radius = (FILTER_SIZE - 1) / 2;
+                for (int i = -radius; i <= radius; i++) {
+                    for (int j = -radius; j <= radius; j++) {
+                        int x_ = x + i;
+                        int y_ = y + j;
+                        if (x_ < 0 || x_ >= width || y_ < 0 || y_ >= height) {
+                            continue;
+                        }
+                        float val = (float) (img[(y_*width + x_)*channels + alpha_channel] & 0xFF);
+                        final_alpha += val / 255.0f;
+                    }
+                }
+                final_alpha = decay * final_alpha / ((float) (FILTER_SIZE*FILTER_SIZE));
+                result[(y*width + x)*channels + alpha_channel] = (byte) (255 * final_alpha);
+
+                if (final_alpha < 5.0f / 255.0f) {
+                    for (int i = 0; i < channels - 1; i++) {
+                        result[(y*width + x)*channels + i] = 0;
+                    }
+                }
+
+                float final_value = 0.0f;
+                for (int c = 0; c < channels - 1; c++) {
+                    final_value = 0.0f;
+                    for (int i = -radius; i <= radius; i++) {
+                        for (int j = -radius; j <= radius; j++) {
+                            int x_ = x + i;
+                            int y_ = y + j;
+                            if (x_ < 0 || x_ >= width || y_ < 0 || y_ >= height) {
+                                continue;
+                            }
+                            float alpha = decay * ((float) (img[(y_*width + x_)*channels + alpha_channel] & 0xFF)) / 255.0f;
+                            float val = ((float) (img[(y_*width + x_)*channels + c] & 0xFF)) / 255.0f;
+                            final_value += val * alpha;
+                        }
+                    }
+                    final_value = final_value / ((float) (FILTER_SIZE*FILTER_SIZE));
+                    final_value = decay * 255 * final_value / final_alpha;
+
+                    result[(y*width + x)*channels + c] = (byte) (final_value);
+                }
+            }
+        }
+    }
+
+    public byte[] processImage(byte[] pixels, byte[] result, int w, int h, int c) {
+        kernelCPU(w, h, c, pixels, result);
+
+        return result;
+    }
+
 }
