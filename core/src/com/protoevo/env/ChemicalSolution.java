@@ -24,6 +24,7 @@ public class ChemicalSolution implements Serializable {
     private Colour[][] colours;
     private float timeSinceUpdate = 0;
     private transient JCudaKernelRunner diffusionKernel;
+    private transient GLComputeShaderRunner diffusionShader;
 
     public interface ChemicalUpdatedCallback {
         void onChemicalUpdated(int i, int j, Colour colour);
@@ -80,7 +81,8 @@ public class ChemicalSolution implements Serializable {
             // has to be called on the same thread running the simulation
             if (DebugMode.isDebugMode())
                 System.out.println("Initialising chemical diffusion CUDA kernel...");
-            diffusionKernel = new JCudaKernelRunner("diffusion");
+            //diffusionKernel = new JCudaKernelRunner("diffusion");
+            diffusionShader = new GLComputeShaderRunner("diffusion");
         }
     }
 
