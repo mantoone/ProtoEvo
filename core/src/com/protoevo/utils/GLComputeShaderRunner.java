@@ -20,7 +20,22 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+
 public class GLComputeShaderRunner {
+    private class GLThread {
+        private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        public void execute(Runnable task) {
+            executor.execute(task);
+        }
+
+        public void shutdown() {
+            executor.shutdown();
+        }
+    }
 
     static final int FILTER_SIZE = 3;
 
@@ -32,6 +47,7 @@ public class GLComputeShaderRunner {
     private int program, computeShader;
     private long window;
     private boolean initialized = false;
+    private GLThread glThread = new GLThread();
 
     /* OpenGL resources */
     private int[] textures = new int[2];
@@ -47,7 +63,9 @@ public class GLComputeShaderRunner {
         this.kernelName = kernelName;
         this.functionName = functionName;
 
-        initialise();
+        glThread.execute(() -> {
+            initialise();
+        });
     }
 
     private void initialise() {
@@ -147,6 +165,13 @@ public class GLComputeShaderRunner {
     }
 
     public byte[] processImage(byte[] pixels, byte[] result, int w, int h, int c) {
+        glThread.execute(() -> {
+            processImageJob(pixels, result, w, h, c);
+        });
+        return result;
+    }
+
+    public byte[] processImageJob(byte[] pixels, byte[] result, int w, int h, int c) {
         // Benchmark the kernel
         int error = 0;
         long startTime = System.nanoTime();
@@ -158,7 +183,7 @@ public class GLComputeShaderRunner {
         ByteBuffer inputBuffer = BufferUtils.createByteBuffer(bufferSize);
         ByteBuffer outputBuffer = BufferUtils.createByteBuffer(bufferSize);
 
-        //glfwMakeContextCurrent(window);
+        glfwMakeContextCurrent(window);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
