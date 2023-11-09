@@ -1,25 +1,28 @@
 #version 430
 
-layout(local_size_x = 32, local_size_y = 32) in;
+//layout(local_size_x = 32, local_size_y = 32) in;
+layout(local_size_x = 1, local_size_y = 1) in;
 
 const int FILTER_SIZE = 3;
 
-layout(std430, binding = 0) buffer devicePixels {
-    int pixels[];
-};
-
-layout(std430, binding = 1) buffer deviceOutput {
-    int outp[];
-};
+layout(binding = 0, rgba8ui) uniform writeonly restrict uimage2D outPixels;
+layout(binding = 1, rgba8ui) uniform readonly restrict uimage2D inPixels;
 
 uniform int width;
 uniform int height;
 uniform int channels;
 
+uniform int test;
+
 void main() {
     int x = int(gl_GlobalInvocationID.x);
     int y = int(gl_GlobalInvocationID.y);
 
+    if (x > width || y > width) return;
+
+    imageStore(outPixels, ivec2(x, y), uvec4(255, 255, 255, 255));
+
+    /*
     // See voidStartDistance in SimulationSettings
     float world_radius = 30.0;
 
@@ -87,6 +90,7 @@ void main() {
         final_value = final_value / float(FILTER_SIZE*FILTER_SIZE);
         final_value = decay * 255 * final_value / final_alpha;
 
-        outp[(y*width + x)*channels + c] = int(final_value);
+        outp[(y*width + x)*channels + c] = int(1); //int(final_value);
     }
+    */
 }
