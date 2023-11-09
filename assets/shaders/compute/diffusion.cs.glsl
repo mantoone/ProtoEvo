@@ -6,7 +6,7 @@ layout(local_size_x = 1, local_size_y = 1) in;
 const int FILTER_SIZE = 3;
 
 layout(binding = 0, rgba8ui) uniform writeonly restrict uimage2D outPixels;
-layout(binding = 1, rgba8ui) uniform readonly restrict uimage2D inPixels;
+layout(binding = 1, rgba8ui) uniform readonly restrict uimage2D pixels;
 
 uniform int width;
 uniform int height;
@@ -18,11 +18,8 @@ void main() {
     int x = int(gl_GlobalInvocationID.x);
     int y = int(gl_GlobalInvocationID.y);
 
-    if (x > width || y > width) return;
+    if (x > width || y > height) return;
 
-    imageStore(outPixels, ivec2(x, y), uvec4(255, 255, 255, 255));
-
-    /*
     // See voidStartDistance in SimulationSettings
     float world_radius = 30.0;
 
@@ -48,6 +45,7 @@ void main() {
     }
 
     int alpha_channel = channels - 1;
+    uvec4 outp;
 
     float final_alpha = 0.0;
     int radius = (FILTER_SIZE - 1) / 2;
@@ -58,16 +56,17 @@ void main() {
             if (x_ < 0 || x_ >= width || y_ < 0 || y_ >= height) {
                 continue;
             }
-            float val = float(pixels[(y_*width + x_)*channels + alpha_channel]) / 255.0;
+            uvec4 pixel = imageLoad(pixels, ivec2(x_, y_));
+            float val = float(pixel[alpha_channel]) / 255.0;
             final_alpha += val;
         }
     }
     final_alpha = decay * final_alpha / float(FILTER_SIZE*FILTER_SIZE);
-    outp[(y*width + x)*channels + alpha_channel] = int(255 * final_alpha);
+    outp[alpha_channel] = int(255 * final_alpha);
 
     if (final_alpha < 5.0 / 255.0) {
         for (int i = 0; i < channels - 1; i++) {
-            outp[(y*width + x)*channels + i] = 0;
+            outp[i] = 0;
         }
     }
 
@@ -82,15 +81,18 @@ void main() {
                 if (x_ < 0 || x_ >= width || y_ < 0 || y_ >= height) {
                     continue;
                 }
-                float alpha = decay * float(pixels[(y_*width + x_)*channels + alpha_channel]) / 255.0;
-                float val = float(pixels[(y_*width + x_)*channels + c]) / 255.0;
+                uvec4 pixel = imageLoad(pixels, ivec2(x_, y_));
+                float alpha = decay * float(pixel[alpha_channel]) / 255.0;
+                float val = float(pixel[c]) / 255.0;
                 final_value += val * alpha;
             }
         }
         final_value = final_value / float(FILTER_SIZE*FILTER_SIZE);
         final_value = decay * 255 * final_value / final_alpha;
 
-        outp[(y*width + x)*channels + c] = int(1); //int(final_value);
+        outp[c] = int(final_value);
     }
-    */
+    
+    //imageStore(outPixels, ivec2(x, y), outp);
+    imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
 }
