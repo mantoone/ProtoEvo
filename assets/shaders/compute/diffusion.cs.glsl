@@ -19,7 +19,13 @@ void main() {
     int y = int(gl_GlobalInvocationID.y);
 
     if (x > width || y > height) return;
+    
+    uvec4 pixel = imageLoad(pixels, ivec2(x, y));
+    //imageStore(outPixels, ivec2(x, y), pixel);
+    imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
 
+
+    /*
     // See voidStartDistance in SimulationSettings
     float world_radius = 30.0;
 
@@ -90,9 +96,11 @@ void main() {
         final_value = final_value / float(FILTER_SIZE*FILTER_SIZE);
         final_value = decay * 255 * final_value / final_alpha;
 
-        outp[c] = int(final_value);
+        outp[c] = uint(int(final_value));
     }
+    outp[3] = 255;
     
-    //imageStore(outPixels, ivec2(x, y), outp);
-    imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
+    imageStore(outPixels, ivec2(x, y), outp);
+    */
+    //imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
 }

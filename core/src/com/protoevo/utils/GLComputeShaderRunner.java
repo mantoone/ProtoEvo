@@ -155,7 +155,7 @@ public class GLComputeShaderRunner {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            final int texSize = 2048;
+            final int texSize = 1024; // Was 2048
             glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8UI, texSize, texSize);
             textures[i] = tex;
         }
@@ -248,6 +248,18 @@ public class GLComputeShaderRunner {
             System.out.println("Error1y: " + error);
         }
 
+        // Copy the input to the input buffer
+        // Set texture parameters
+        glBindTexture(GL_TEXTURE_2D, textures[1]);
+        ByteBuffer inputBuffer = BufferUtils.createByteBuffer(pixels.length);
+        inputBuffer.put(pixels);
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, w, h, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, inputBuffer);
+        error = glGetError();
+        if (error != GL_NO_ERROR) {
+            // Print the error
+            System.out.println("Error copy to shader: " + error);
+        }
+
         // Dispatch the compute shader
         int gridSizeX = (int) Math.ceil((double) w / blockSizeX);
         int gridSizeY = (int) Math.ceil((double) h / blockSizeY);
@@ -289,7 +301,7 @@ public class GLComputeShaderRunner {
         }
 
         // Get error if fails
-        ByteBuffer outputBuffer = BufferUtils.createByteBuffer(2048*2048*4);
+        ByteBuffer outputBuffer = BufferUtils.createByteBuffer(w*h*c);
         glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, outputBuffer);
         error = glGetError();
         if (error != GL_NO_ERROR) {
