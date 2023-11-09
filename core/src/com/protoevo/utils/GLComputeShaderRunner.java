@@ -21,8 +21,10 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 
 public class GLComputeShaderRunner {
@@ -30,12 +32,22 @@ public class GLComputeShaderRunner {
         private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
         public void execute(Runnable task) {
-            executor.execute(task);
+            FutureTask<?> futureTask = new FutureTask<>(task, null);
+            executor.execute(futureTask);
+            try {
+                futureTask.get();
+            } catch (InterruptedException e) {
+                System.out.println("Error executing task: " + e);
+            } catch (ExecutionException e){
+                System.out.println("Error executing task: " + e);
+            }
         }
 
         public void shutdown() {
             executor.shutdown();
         }
+
+        // execute synchronously
     }
 
     static final int FILTER_SIZE = 3;
@@ -144,7 +156,7 @@ public class GLComputeShaderRunner {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             final int texSize = 2048;
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8UI, texSize, texSize);
+            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8UI, texSize, texSize);
             textures[i] = tex;
         }
 
@@ -169,19 +181,29 @@ public class GLComputeShaderRunner {
         glThread.execute(() -> {
             processImageJob(pixels, result, w, h, c);
         });
+
+        // Count number of non-zero pixels in result
+        int nonZero = 0;
+        for (int i = 0; i < result.length; i++) {
+            if (result[i] != 0) {
+                nonZero++;
+            }
+        }
+        System.out.println("Non-zero pixels in result after threading: " + nonZero);
+
         return result;
     }
 
     public byte[] processImageJob(byte[] pixels, byte[] result, int w, int h, int c) {
         // Benchmark the kernel
+
+        System.out.println("Process image job params: " + w + " " + h + " " + c);
         int error = 0;
         long startTime = System.nanoTime();
 
         // Create the input and output buffers
         int pxLen = w * h * c;
-        int resLen = w * h * c;
-        int bufferSize = Math.max(pxLen, resLen);
-        ByteBuffer inputBuffer = BufferUtils.createByteBuffer(bufferSize);
+        int resLen= pxLen;
 
         glfwMakeContextCurrent(window);
         error = glGetError();
@@ -190,8 +212,8 @@ public class GLComputeShaderRunner {
             System.out.println("Error1a: " + error);
         }
 
-        glBindImageTexture(0, textures[0], 0, false, 0, GL_WRITE_ONLY, GL_R8UI);
-        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_ONLY, GL_R8UI);
+        glBindImageTexture(0, textures[0], 0, false, 0, GL_WRITE_ONLY, GL_RGBA8UI);
+        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_ONLY, GL_RGBA8UI);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
@@ -257,7 +279,7 @@ public class GLComputeShaderRunner {
             // Print the error
             System.out.println("Error2: " + error);
         }
-        glBindImageTexture(0, textures[0], 0, false, 0, GL_READ_ONLY, GL_R8UI);
+        glBindImageTexture(0, textures[0], 0, false, 0, GL_READ_ONLY, GL_RGBA8UI);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         error = glGetError();
@@ -268,7 +290,7 @@ public class GLComputeShaderRunner {
 
         // Get error if fails
         ByteBuffer outputBuffer = BufferUtils.createByteBuffer(2048*2048*4);
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, outputBuffer);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, outputBuffer);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error

@@ -62,8 +62,10 @@ public class ChemicalSolution implements Serializable {
     }
 
     public void initialise() {
+        System.out.println("Initialising chemical solution...");
         if (!initialised) {
             byteBuffer = new byte[chemicalTextureWidth * chemicalTextureHeight * 4];
+            System.out.println("Byte buffer size just after init: " + byteBuffer.length);
             colours = new Colour[chemicalTextureWidth][chemicalTextureHeight];
             for (int i = 0; i < chemicalTextureWidth; i++) {
                 for (int j = 0; j < chemicalTextureHeight; j++) {
@@ -262,6 +264,7 @@ public class ChemicalSolution implements Serializable {
             if (diffusionShader == null)
                 initialise();
 
+            System.out.println("Byte buffer size before process: " + byteBuffer.length);
             diffusionShader.processImage(
                     byteBuffer, chemicalTextureWidth, chemicalTextureHeight);
         }
