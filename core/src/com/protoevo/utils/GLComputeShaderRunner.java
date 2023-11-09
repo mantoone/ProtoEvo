@@ -2,6 +2,7 @@ package com.protoevo.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -143,7 +144,7 @@ public class GLComputeShaderRunner {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             final int texSize = 2048;
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8UI, texSize, texSize);
+            glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8UI, texSize, texSize);
             textures[i] = tex;
         }
 
@@ -189,8 +190,8 @@ public class GLComputeShaderRunner {
             System.out.println("Error1a: " + error);
         }
 
-        glBindImageTexture(0, textures[0], 0, false, 0, GL_WRITE_ONLY, GL_RGBA8UI);
-        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_ONLY, GL_RGBA8UI);
+        glBindImageTexture(0, textures[0], 0, false, 0, GL_WRITE_ONLY, GL_R8UI);
+        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_ONLY, GL_R8UI);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
@@ -256,7 +257,7 @@ public class GLComputeShaderRunner {
             // Print the error
             System.out.println("Error2: " + error);
         }
-        glBindImageTexture(0, textures[0], 0, false, 0, GL_READ_ONLY, GL_RGBA8UI);
+        glBindImageTexture(0, textures[0], 0, false, 0, GL_READ_ONLY, GL_R8UI);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         error = glGetError();
@@ -266,8 +267,8 @@ public class GLComputeShaderRunner {
         }
 
         // Get error if fails
-        ByteBuffer outputBuffer = BufferUtils.createByteBuffer(2048*2048*8);
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA8UI, GL_BYTE, outputBuffer);
+        ByteBuffer outputBuffer = BufferUtils.createByteBuffer(2048*2048*4);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, outputBuffer);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
