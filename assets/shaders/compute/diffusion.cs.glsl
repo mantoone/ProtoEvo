@@ -1,5 +1,6 @@
 #version 430
 
+// These need to match the workgroup size on Java side
 layout(local_size_x = 8, local_size_y = 8) in;
 
 const int FILTER_SIZE = 3;
@@ -17,11 +18,6 @@ void main() {
 
     if (x > width || y > height) return;
     
-    //uvec4 pixel = imageLoad(pixels, ivec2(x, y));
-    //imageStore(outPixels, ivec2(x, y), pixel);
-    //imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
-
-
     // See voidStartDistance in SimulationSettings
     float world_radius = 30.0;
 

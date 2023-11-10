@@ -471,7 +471,6 @@ public class Simulation implements Runnable
 //			timeDilation = 10f;
 		else
 			timeDilation = 1f;
-		System.out.println("Time dilation set to: " + timeDilation + "x");
 	}
 
 	public String getLoadingStatus() {

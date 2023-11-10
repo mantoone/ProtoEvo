@@ -3,14 +3,11 @@ package com.protoevo.core;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.github.javafaker.App;
 import com.protoevo.networking.RemoteGraphics;
 import com.protoevo.ui.GraphicsAdapter;
 import com.protoevo.utils.DebugMode;
 
 import java.util.Map;
-
-import org.checkerframework.checker.units.qual.g;
 
 import static com.protoevo.utils.Utils.parseArgs;
 import static org.lwjgl.glfw.GLFW.glfwGetCurrentContext;
@@ -157,8 +154,8 @@ public class ApplicationManager {
     }
 
     public void update() {
-        ApplicationManager.window = glfwGetCurrentContext();
-        System.out.println("Window: " + window);
+        if(ApplicationManager.window == 0)
+            ApplicationManager.window = glfwGetCurrentContext();
 
         if (hasSimulation() && simulation.isReady()) {
 
