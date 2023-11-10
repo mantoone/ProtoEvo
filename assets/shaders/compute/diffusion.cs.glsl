@@ -20,12 +20,11 @@ void main() {
 
     if (x > width || y > height) return;
     
-    uvec4 pixel = imageLoad(pixels, ivec2(x, y));
-    imageStore(outPixels, ivec2(x, y), pixel);
+    //uvec4 pixel = imageLoad(pixels, ivec2(x, y));
+    //imageStore(outPixels, ivec2(x, y), pixel);
     //imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
 
 
-    /*
     // See voidStartDistance in SimulationSettings
     float world_radius = 30.0;
 
@@ -101,6 +100,5 @@ void main() {
     outp[3] = 255;
     
     imageStore(outPixels, ivec2(x, y), outp);
-    */
     //imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
 }
