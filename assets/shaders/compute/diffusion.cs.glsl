@@ -5,8 +5,8 @@ layout(local_size_x = 1, local_size_y = 1) in;
 
 const int FILTER_SIZE = 3;
 
-layout(binding = 0, rgba8ui) uniform writeonly restrict uimage2D outPixels;
-layout(binding = 1, rgba8ui) uniform readonly restrict uimage2D pixels;
+layout(binding = 0, rgba8ui) uniform uimage2D outPixels;
+layout(binding = 1, rgba8ui) uniform uimage2D pixels;
 
 uniform int width;
 uniform int height;
@@ -21,8 +21,8 @@ void main() {
     if (x > width || y > height) return;
     
     uvec4 pixel = imageLoad(pixels, ivec2(x, y));
-    //imageStore(outPixels, ivec2(x, y), pixel);
-    imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
+    imageStore(outPixels, ivec2(x, y), pixel);
+    //imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
 
 
     /*

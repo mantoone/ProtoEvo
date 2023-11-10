@@ -140,9 +140,6 @@ public class GLComputeShaderRunner {
             System.out.println("Init Error: " + error);
         }
 
-        // Detach the compute shader
-        //glDetachShader(program, computeShader);
-
         // Delete the compute shader
         glDeleteShader(computeShader);
 
@@ -212,8 +209,8 @@ public class GLComputeShaderRunner {
             System.out.println("Error1a: " + error);
         }
 
-        glBindImageTexture(0, textures[0], 0, false, 0, GL_WRITE_ONLY, GL_RGBA8UI);
-        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_ONLY, GL_RGBA8UI);
+        glBindImageTexture(0, textures[0], 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
+        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
@@ -248,12 +245,79 @@ public class GLComputeShaderRunner {
             System.out.println("Error1y: " + error);
         }
 
+        System.out.println("Pixels length before inputBuffer: " + pixels.length);
+        ByteBuffer inputBuffer = BufferUtils.createByteBuffer(pixels.length);
+        inputBuffer.put(pixels);
+        inputBuffer.position(0);
+
+        System.out.println("Pixels put to inputBuffer");
+
         // Copy the input to the input buffer
         // Set texture parameters
         glBindTexture(GL_TEXTURE_2D, textures[1]);
-        ByteBuffer inputBuffer = BufferUtils.createByteBuffer(pixels.length);
-        inputBuffer.put(pixels);
-        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, w, h, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, inputBuffer);
+        error = glGetError();
+        if (error != GL_NO_ERROR) {
+            // Print the error
+            System.out.println("Error binding texture: " + error);
+        }
+
+        /*
+        nonZero = 0;
+        for (int i = 0; i < resLen; i++) {
+            byte px = inputBuffer.get(i);
+            if (px != 0) {
+                nonZero++;
+            }
+        }
+        System.out.println("Non-zero pixels in inputBuffer: " + nonZero);
+        */
+
+        System.out.println("1");
+
+        int tempTex = glGenTextures();
+        error = glGetError();
+        if (error != GL_NO_ERROR) {
+            // Print the error
+            System.out.println("Error copy to shader test1: " + error);
+        }
+
+        System.out.println("2");
+        glBindTexture(GL_TEXTURE_2D, tempTex);
+        glActiveTexture(GL_TEXTURE1);
+        //glBindTexture(GL_TEXTURE_2D, textures[1]);
+        error = glGetError();
+        if (error != GL_NO_ERROR) {
+            // Print the error
+            System.out.println("Error copy to shader test2: " + error);
+        }
+
+        System.out.println("3");
+        glBindImageTexture(1, tempTex, 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        // Input buffer is 32x32
+        //ByteBuffer inputBuffer2 = BufferUtils.createByteBuffer(w*h*4);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8I, w, h, 0, GL_RGBA_INTEGER, GL_BYTE, inputBuffer);
+
+        System.out.println("4");
+        error = glGetError();
+        if (error != GL_NO_ERROR) {
+            // Print the error
+            System.out.println("Error copy to shader test: " + error);
+        }
+
+        System.out.println("Textures[1] == " + textures[1] + " tempTex == " + tempTex);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        /*
+        glBindTexture(GL_TEXTURE_2D, textures[1]);
+        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, w, h, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, inputBuffer);
+        */
+        //glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, inputBuffer);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
