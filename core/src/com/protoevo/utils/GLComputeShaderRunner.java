@@ -66,7 +66,7 @@ public class GLComputeShaderRunner {
     private int[] textures = new int[2];
 
     public GLComputeShaderRunner(String kernelName) {
-        this(kernelName, "kernel", 32, 32);
+        this(kernelName, "kernel", 8, 8);
     }
 
     public GLComputeShaderRunner(String kernelName, String functionName, int blockSizeX, int blockSizeY) {
@@ -281,8 +281,7 @@ public class GLComputeShaderRunner {
         // Dispatch the compute shader
         int gridSizeX = (int) Math.ceil((double) w / blockSizeX);
         int gridSizeY = (int) Math.ceil((double) h / blockSizeY);
-        //glDispatchCompute(gridSizeX, gridSizeY, 1);
-        glDispatchCompute(w, h, 1);
+        glDispatchCompute(gridSizeX, gridSizeY, 1);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
