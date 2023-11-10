@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static com.protoevo.test.lwjgldemo.IOUtils.ioResourceToByteBuffer;
+import static com.protoevo.utils.Utils.randomLong;
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -21,6 +22,8 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
+import com.protoevo.core.ApplicationManager;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +35,7 @@ public class GLComputeShaderRunner {
         private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
         public void execute(Runnable task) {
+            /*
             FutureTask<?> futureTask = new FutureTask<>(task, null);
             executor.execute(futureTask);
             try {
@@ -41,13 +45,15 @@ public class GLComputeShaderRunner {
             } catch (ExecutionException e){
                 System.out.println("Error executing task: " + e);
             }
+            */
+
+            task.run();
         }
 
         public void shutdown() {
             executor.shutdown();
         }
 
-        // execute synchronously
     }
 
     static final int FILTER_SIZE = 3;
@@ -79,7 +85,7 @@ public class GLComputeShaderRunner {
         this.functionName = functionName;
 
         glThread.execute(() -> {
-            initialise();
+            //initialise();
         });
     }
 
@@ -92,18 +98,19 @@ public class GLComputeShaderRunner {
         if (!glfwInit())
             throw new AssertionError("Failed to initialize GLFW");
         // Create opengl context
+        /*
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // <- make the window visible explicitly later
-        window = glfwCreateWindow(1, 1, "test", NULL, NULL);
+        */
+        window = ApplicationManager.window;
         if (window == NULL)
             throw new AssertionError("Failed to create GLFW window");
         glfwMakeContextCurrent(window);
 
-        GL.createCapabilities();
         computeShader = glCreateShader(GL_COMPUTE_SHADER);
 
         // Load the shader source code
@@ -195,6 +202,15 @@ public class GLComputeShaderRunner {
     }
 
     public byte[] processImageJob(byte[] pixels, byte[] result, int w, int h, int c) {
+        if(!initialized) {
+            if (ApplicationManager.window == NULL){
+                System.out.println("Window is null");
+                return result;
+            }
+            else {
+                initialise();
+            }
+        } 
         int error = 0;
         long startTime = System.nanoTime();
 
@@ -245,14 +261,8 @@ public class GLComputeShaderRunner {
         }
 
 
-        error = glGetError();
-        if (error != GL_NO_ERROR) {
-            // Print the error
-            System.out.println("Error copy to shader test1: " + error);
-        }
-
         glBindTexture(GL_TEXTURE_2D, textures[1]);
-        glActiveTexture(GL_TEXTURE1);
+        //glActiveTexture(GL_TEXTURE1);
 
         glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

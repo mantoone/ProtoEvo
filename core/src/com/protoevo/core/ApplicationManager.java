@@ -3,17 +3,22 @@ package com.protoevo.core;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.github.javafaker.App;
 import com.protoevo.networking.RemoteGraphics;
 import com.protoevo.ui.GraphicsAdapter;
 import com.protoevo.utils.DebugMode;
 
 import java.util.Map;
 
+import org.checkerframework.checker.units.qual.g;
+
 import static com.protoevo.utils.Utils.parseArgs;
+import static org.lwjgl.glfw.GLFW.glfwGetCurrentContext;
 
 public class ApplicationManager {
 
     public final static boolean windowed = false, borderlessWindowed = true;
+    public static long window = 0;
     private volatile boolean headless = false, applicationRunning = true, saveOnExit = true;
     private boolean onlyHeadless = false;
     private Simulation simulation;
@@ -152,6 +157,9 @@ public class ApplicationManager {
     }
 
     public void update() {
+        ApplicationManager.window = glfwGetCurrentContext();
+        System.out.println("Window: " + window);
+
         if (hasSimulation() && simulation.isReady()) {
 
             if (hasRemoteGraphics() && sendRemoteGraphicsRequested) {
@@ -240,6 +248,7 @@ public class ApplicationManager {
         graphics = new GraphicsAdapter(this);
         // Creates graphics and runs updates from rendering loop
         new Lwjgl3Application(graphics, config);
+
     }
 
     public void disposeSimulationIfPresent() {
