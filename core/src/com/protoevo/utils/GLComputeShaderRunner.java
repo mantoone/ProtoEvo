@@ -61,6 +61,8 @@ public class GLComputeShaderRunner {
     private long window;
     private boolean initialized = false;
     private GLThread glThread = new GLThread();
+    private ByteBuffer inputBuffer = BufferUtils.createByteBuffer(1024*1024*4);
+    private ByteBuffer outputBuffer = BufferUtils.createByteBuffer(1024*1024*4);
 
     /* OpenGL resources */
     private int[] textures = new int[2];
@@ -94,7 +96,9 @@ public class GLComputeShaderRunner {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-        window = glfwCreateWindow(100, 100, "test", NULL, NULL);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // <- make the window visible explicitly later
+        window = glfwCreateWindow(1, 1, "test", NULL, NULL);
         if (window == NULL)
             throw new AssertionError("Failed to create GLFW window");
         glfwMakeContextCurrent(window);
@@ -145,23 +149,31 @@ public class GLComputeShaderRunner {
 
         // Create textures
 
-        for (int i = 0; i < textures.length; i++) {
-            int tex = glGenTextures();
-            glBindTexture(GL_TEXTURE_2D, tex);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            final int texSize = 1024; // Was 2048
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8UI, texSize, texSize);
-            textures[i] = tex;
-        }
+        textures[0] = glGenTextures();
+            
+        glBindTexture(GL_TEXTURE_2D, textures[0]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        final int texSize = 1024; // Was 2048
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8UI, texSize, texSize);
+
+        textures[1] = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, textures[1]);
+        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        ByteBuffer inputBuffer = BufferUtils.createByteBuffer(texSize*texSize*4);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8I, texSize, texSize, 0, GL_RGBA_INTEGER, GL_BYTE, inputBuffer);
 
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
             System.out.println("Init Error: " + error);
         }
+
+        glfwMakeContextCurrent(window);
 
         initialized = true;
     }
@@ -186,7 +198,6 @@ public class GLComputeShaderRunner {
         int error = 0;
         long startTime = System.nanoTime();
 
-        glfwMakeContextCurrent(window);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
@@ -219,7 +230,7 @@ public class GLComputeShaderRunner {
             System.out.println("Error1y: " + error);
         }
 
-        ByteBuffer inputBuffer = BufferUtils.createByteBuffer(pixels.length);
+        inputBuffer.position(0);
         inputBuffer.put(pixels);
         inputBuffer.position(0);
 
@@ -234,29 +245,23 @@ public class GLComputeShaderRunner {
         }
 
 
-        int tempTex = glGenTextures();
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
             System.out.println("Error copy to shader test1: " + error);
         }
 
-        glBindTexture(GL_TEXTURE_2D, tempTex);
+        glBindTexture(GL_TEXTURE_2D, textures[1]);
         glActiveTexture(GL_TEXTURE1);
-        //glBindTexture(GL_TEXTURE_2D, textures[1]);
-        error = glGetError();
-        if (error != GL_NO_ERROR) {
-            // Print the error
-            System.out.println("Error copy to shader test2: " + error);
-        }
 
-        glBindImageTexture(1, tempTex, 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
+        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         // Input buffer is 32x32
         //ByteBuffer inputBuffer2 = BufferUtils.createByteBuffer(w*h*4);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8I, w, h, 0, GL_RGBA_INTEGER, GL_BYTE, inputBuffer);
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8I, w, h, 0, GL_RGBA_INTEGER, GL_BYTE, inputBuffer);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA_INTEGER, GL_BYTE, inputBuffer);
 
         error = glGetError();
         if (error != GL_NO_ERROR) {
@@ -275,6 +280,9 @@ public class GLComputeShaderRunner {
         // Dispatch the compute shader
         int gridSizeX = (int) Math.ceil((double) w / blockSizeX);
         int gridSizeY = (int) Math.ceil((double) h / blockSizeY);
+        long startTimeCompute = System.nanoTime();
+
+        // Compute runs in ~0ms
         glDispatchCompute(gridSizeX, gridSizeY, 1);
         error = glGetError();
         if (error != GL_NO_ERROR) {
@@ -284,6 +292,11 @@ public class GLComputeShaderRunner {
 
         // Wait for the compute shader to finish
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        long endTime2 = System.nanoTime();
+        long totalTimeCompute = endTime2 - startTimeCompute;
+        //System.out.println("Compute time: " + totalTimeCompute / 1000000 + "ms");
+
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
@@ -307,20 +320,24 @@ public class GLComputeShaderRunner {
         }
 
         // Get error if fails
-        ByteBuffer outputBuffer = BufferUtils.createByteBuffer(w*h*c);
+        outputBuffer.position(0);
+        // glGetTexImage is the slowest part of the program
+        long startTimeCopy = System.nanoTime();
+
         glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, outputBuffer);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
             System.out.println("Error4: " + error);
         }
+        long endTime3 = System.nanoTime();
+        long totalTimeCopy = endTime3 - startTimeCopy;
+        //System.out.println("GPU->CPU copy time: " + totalTimeCopy / 1000000 + "ms");
 
         glBindTexture(GL_TEXTURE_2D, 0);
         // Copy the output to result array
 
         outputBuffer.get(result);
-
-        glDeleteTextures(tempTex);
 
         long endTime = System.nanoTime();
         totalTime += endTime - startTime;
