@@ -179,22 +179,12 @@ public class GLComputeShaderRunner {
             processImageJob(pixels, result, w, h, c);
         });
 
-        // Count number of non-zero pixels in result
-        int nonZero = 0;
-        for (int i = 0; i < result.length; i++) {
-            if (result[i] != 0) {
-                nonZero++;
-            }
-        }
-        System.out.println("Non-zero pixels in result after threading: " + nonZero);
-
         return result;
     }
 
     public byte[] processImageJob(byte[] pixels, byte[] result, int w, int h, int c) {
         // Benchmark the kernel
 
-        System.out.println("Process image job params: " + w + " " + h + " " + c);
         int error = 0;
         long startTime = System.nanoTime();
 
@@ -217,17 +207,7 @@ public class GLComputeShaderRunner {
             System.out.println("Error1z: " + error);
         }
 
-        // Count number of non-zero pixels
-        int nonZero = 0;
-        for (int i = 0; i < pxLen; i++) {
-            if (pixels[i] != 0) {
-                nonZero++;
-            }
-        }
-        System.out.println("Non-zero pixels: " + nonZero);
-
         // Bind the program and set the input and output buffer bindings
-        System.out.println("Program before use: " + program);
         glUseProgram(program);
         error = glGetError();
         if (error != GL_NO_ERROR) {
@@ -245,12 +225,10 @@ public class GLComputeShaderRunner {
             System.out.println("Error1y: " + error);
         }
 
-        System.out.println("Pixels length before inputBuffer: " + pixels.length);
         ByteBuffer inputBuffer = BufferUtils.createByteBuffer(pixels.length);
         inputBuffer.put(pixels);
         inputBuffer.position(0);
 
-        System.out.println("Pixels put to inputBuffer");
 
         // Copy the input to the input buffer
         // Set texture parameters
@@ -261,18 +239,6 @@ public class GLComputeShaderRunner {
             System.out.println("Error binding texture: " + error);
         }
 
-        /*
-        nonZero = 0;
-        for (int i = 0; i < resLen; i++) {
-            byte px = inputBuffer.get(i);
-            if (px != 0) {
-                nonZero++;
-            }
-        }
-        System.out.println("Non-zero pixels in inputBuffer: " + nonZero);
-        */
-
-        System.out.println("1");
 
         int tempTex = glGenTextures();
         error = glGetError();
@@ -281,7 +247,6 @@ public class GLComputeShaderRunner {
             System.out.println("Error copy to shader test1: " + error);
         }
 
-        System.out.println("2");
         glBindTexture(GL_TEXTURE_2D, tempTex);
         glActiveTexture(GL_TEXTURE1);
         //glBindTexture(GL_TEXTURE_2D, textures[1]);
@@ -291,7 +256,6 @@ public class GLComputeShaderRunner {
             System.out.println("Error copy to shader test2: " + error);
         }
 
-        System.out.println("3");
         glBindImageTexture(1, tempTex, 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -300,24 +264,14 @@ public class GLComputeShaderRunner {
         //ByteBuffer inputBuffer2 = BufferUtils.createByteBuffer(w*h*4);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8I, w, h, 0, GL_RGBA_INTEGER, GL_BYTE, inputBuffer);
 
-        System.out.println("4");
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
             System.out.println("Error copy to shader test: " + error);
         }
 
-        System.out.println("Textures[1] == " + textures[1] + " tempTex == " + tempTex);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        /*
-        glBindTexture(GL_TEXTURE_2D, textures[1]);
-        glBindImageTexture(1, textures[1], 0, false, 0, GL_READ_WRITE, GL_RGBA8UI);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, w, h, 0, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, inputBuffer);
-        */
-        //glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, inputBuffer);
         error = glGetError();
         if (error != GL_NO_ERROR) {
             // Print the error
@@ -345,10 +299,8 @@ public class GLComputeShaderRunner {
 
         // Get uniform "test" from the shader
         int test = glGetUniformLocation(program, "test");
-        System.out.println("test: " + test);
 
         // Read the result
-        System.out.println("Before img read");
         glBindTexture(GL_TEXTURE_2D, textures[0]);
         error = glGetError();
         if (error != GL_NO_ERROR) {
@@ -375,28 +327,10 @@ public class GLComputeShaderRunner {
 
         glBindTexture(GL_TEXTURE_2D, 0);
         // Copy the output to result array
-        System.out.println("After img read");
-
-        // Go through output buffer and find non-zero pixels
-        nonZero = 0;
-        for (int i = 0; i < resLen; i++) {
-            byte px = outputBuffer.get(i);
-            if (px != 0) {
-                nonZero++;
-            }
-        }
-        System.out.println("Non-zero pixels in outputBuffer: " + nonZero);
 
         outputBuffer.get(result);
 
-        // Count number of non-zero pixels in result
-        nonZero = 0;
-        for (int i = 0; i < resLen; i++) {
-            if (result[i] != 0) {
-                nonZero++;
-            }
-        }
-        System.out.println("Non-zero pixels in result: " + nonZero);
+        glDeleteTextures(tempTex);
 
         long endTime = System.nanoTime();
         totalTime += endTime - startTime;
