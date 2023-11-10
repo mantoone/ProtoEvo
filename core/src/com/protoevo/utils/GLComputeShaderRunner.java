@@ -183,14 +183,8 @@ public class GLComputeShaderRunner {
     }
 
     public byte[] processImageJob(byte[] pixels, byte[] result, int w, int h, int c) {
-        // Benchmark the kernel
-
         int error = 0;
         long startTime = System.nanoTime();
-
-        // Create the input and output buffers
-        int pxLen = w * h * c;
-        int resLen= pxLen;
 
         glfwMakeContextCurrent(window);
         error = glGetError();
@@ -295,9 +289,6 @@ public class GLComputeShaderRunner {
             // Print the error
             System.out.println("Error1: " + error);
         }
-
-        // Get uniform "test" from the shader
-        int test = glGetUniformLocation(program, "test");
 
         // Read the result
         glBindTexture(GL_TEXTURE_2D, textures[0]);

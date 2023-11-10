@@ -1,7 +1,6 @@
 #version 430
 
-//layout(local_size_x = 32, local_size_y = 32) in;
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 
 const int FILTER_SIZE = 3;
 
@@ -11,8 +10,6 @@ layout(binding = 1, rgba8ui) uniform uimage2D pixels;
 uniform int width;
 uniform int height;
 uniform int channels;
-
-uniform int test;
 
 void main() {
     int x = int(gl_GlobalInvocationID.x);
@@ -100,5 +97,4 @@ void main() {
     outp[3] = 255;
     
     imageStore(outPixels, ivec2(x, y), outp);
-    //imageStore(outPixels, ivec2(x, y), uvec4(255, 1, 1, 255));
 }
