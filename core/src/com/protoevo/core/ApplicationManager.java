@@ -136,8 +136,19 @@ public class ApplicationManager {
 
     public void loopUpdate() {
         headless = true;
+        int updates = 0;
+        // Start time
+        long lastTime = System.nanoTime();
+        
         while (headless) {
             update();
+            updates++;
+
+            if(System.nanoTime() - lastTime >= 5000000000L) {
+                System.out.println("Updates: " + updates / 5);
+                updates = 0;
+                lastTime = System.nanoTime();
+            }
         }
     }
 
@@ -158,14 +169,7 @@ public class ApplicationManager {
         }
     }
 
-    public static void ensureWindowUpToDate() {
-        if (ApplicationManager.window == 0)
-            ApplicationManager.window = glfwGetCurrentContext();
-    }
-
     public void update() {
-        ensureWindowUpToDate();
-
         if (hasSimulation() && simulation.isReady()) {
 
             if (hasRemoteGraphics() && sendRemoteGraphicsRequested) {
