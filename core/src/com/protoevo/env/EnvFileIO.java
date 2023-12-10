@@ -29,56 +29,59 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class EnvFileIO {
+    private static FSTConfiguration fstConfig = null;
 
-    public static FSTConfiguration getFSTConfig() {
-        FSTConfiguration fstConfig = FSTConfiguration.createDefaultConfiguration();
-        fstConfig.registerClass(
-                Environment.class,
-                Cell.class,
-                Food.class,
-                CauseOfDeath.class,
-                ConstructionProject.class,
-                SpatialHash.class,
-                Rock.class,
-                Box2DCollisionHandler.class,
-                Colour.class,
-                Protozoan.class,
-                SurfaceNode.class,
-                NodeAttachment.class,
-                Flagellum.class,
-                Spike.class,
-                PhagocyticReceptor.class,
-                Photoreceptor.class,
-                AdhesionReceptor.class,
-                Organelle.class,
-                MoleculeProductionOrganelle.class,
-                PlantCell.class,
-                ChemicalSolution.class,
-                ComplexMolecule.class,
-                Statistics.class,
-                Statistics.Stat.class,
-                JointsManager.class,
-                Joining.class,
-                GeneExpressionFunction.class,
-                GeneExpressionFunction.ExpressionNode.class,
-                GeneExpressionFunction.RegulationNode.class,
-                NeuralNetwork.class,
-                Neuron.class,
-                NetworkGenome.class,
-                NeuronGene.class,
-                SynapseGene.class,
-                Evolvable.class,
-                Evolvable.Component.class,
-                Evolvable.Element.class,
-                Trait.class,
-                FloatTrait.class,
-                ControlTrait.class,
-                BooleanTrait.class,
-                IntegerTrait.class,
-                CollectionTrait.class,
-                Vector2.class
-        );
-//        fstConfig.setShareReferences(false);
+    public static synchronized FSTConfiguration getFSTConfig() {
+        if (fstConfig == null) {
+            fstConfig = FSTConfiguration.createDefaultConfiguration();
+            fstConfig.registerClass(
+                    Environment.class,
+                    Cell.class,
+                    Food.class,
+                    CauseOfDeath.class,
+                    ConstructionProject.class,
+                    SpatialHash.class,
+                    Rock.class,
+                    Box2DCollisionHandler.class,
+                    Colour.class,
+                    Protozoan.class,
+                    SurfaceNode.class,
+                    NodeAttachment.class,
+                    Flagellum.class,
+                    Spike.class,
+                    PhagocyticReceptor.class,
+                    Photoreceptor.class,
+                    AdhesionReceptor.class,
+                    Organelle.class,
+                    MoleculeProductionOrganelle.class,
+                    PlantCell.class,
+                    ChemicalSolution.class,
+                    ComplexMolecule.class,
+                    Statistics.class,
+                    Statistics.Stat.class,
+                    JointsManager.class,
+                    Joining.class,
+                    GeneExpressionFunction.class,
+                    GeneExpressionFunction.ExpressionNode.class,
+                    GeneExpressionFunction.RegulationNode.class,
+                    NeuralNetwork.class,
+                    Neuron.class,
+                    NetworkGenome.class,
+                    NeuronGene.class,
+                    SynapseGene.class,
+                    Evolvable.class,
+                    Evolvable.Component.class,
+                    Evolvable.Element.class,
+                    Trait.class,
+                    FloatTrait.class,
+                    ControlTrait.class,
+                    BooleanTrait.class,
+                    IntegerTrait.class,
+                    CollectionTrait.class,
+                    Vector2.class
+            );
+    //        fstConfig.setShareReferences(false);
+        }
         return fstConfig;
     }
 
