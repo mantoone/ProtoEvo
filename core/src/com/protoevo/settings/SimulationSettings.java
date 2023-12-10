@@ -23,7 +23,7 @@ public class SimulationSettings extends Settings {
     public final Settings.Parameter<Boolean> finishOnProtozoaExtinction = new Settings.Parameter<>(
             "Finish on Extinction",
             "Whether to stop the simulation when all Protozoa go extinct.",
-            true
+            false
     );
 //    public final Settings.Parameter<Boolean> repopOnProtozoaExtinction = new Settings.Parameter<>(
 //            "Repopulate on Extinction",

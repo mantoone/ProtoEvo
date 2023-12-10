@@ -83,6 +83,7 @@ public class SimulationInputManager {
         topBar.createLeftBarImageButton("icons/home_icon.png", simulationScreen::resetCamera);
         topBar.createLeftBarImageButton("icons/folder.png", simulation::openSaveFolderOnDesktop);
         topBar.createLeftBarImageButton("icons/terminal.png", graphics::switchToHeadlessMode);
+        topBar.createLeftBarImageButton("icons/jedi_on.png", simulation::createRandomProtozoa);
 
         topBar.createLeftBarToggleImageButton(
                 "icons/meander_disabled.png", "icons/meander_enabled.png",

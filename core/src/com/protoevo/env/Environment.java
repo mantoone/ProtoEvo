@@ -261,6 +261,14 @@ public class Environment implements Serializable
 			cell.getParticle().applyImpulse(Geometry.randomVector(.01f));
 	}
 
+	public void createRandomProtozoa(int nProtozoa) {
+		for (int i = 0; i < nProtozoa; i++) {
+			Protozoan p = Evolvable.createNew(Protozoan.class);
+			p.setEnvironmentAndBuildPhysics(this);
+			findRandomPositionOrKillCell(p);
+		}
+	}
+
 	public void findRandomPositionOrKillCell(Cell cell) {
 		Vector2 pos = getRandomPosition(cell);
 		if (pos == null) {

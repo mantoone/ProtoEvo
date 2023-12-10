@@ -38,11 +38,11 @@ public class MiscSettings extends Settings {
     public final Settings.Parameter<Integer> maxPlants = new Settings.Parameter<>(
             "Max Plants",
             "The maximum number of plants that can exist in the simulation.",
-            1500);
+            500);
     public final Settings.Parameter<Integer> maxProtozoa = new Settings.Parameter<>(
             "Max Protozoa",
             "The maximum number of protozoa that can exist in the simulation.",
-            500);
+            1000);
     public final Settings.Parameter<Integer> maxMeat = new Settings.Parameter<>(
             "Max Meat",
             "The maximum number of meat that can exist in the simulation.",

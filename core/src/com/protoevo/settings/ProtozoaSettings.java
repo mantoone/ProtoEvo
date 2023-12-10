@@ -26,7 +26,7 @@ public class ProtozoaSettings extends Settings {
     public final Settings.Parameter<Float> starvationFactor = new Settings.Parameter<>(
             "Starvation Factor",
             "The rate at which a protozoan's health is reduced when it is not eating.",
-            .85f);
+            1.85f);
     public final Settings.Parameter<Float> minHealthToSplit = new Settings.Parameter<>(
             "Min Health to Split",
             "The minimum health required to produce children.",

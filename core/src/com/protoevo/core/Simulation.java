@@ -265,10 +265,19 @@ public class Simulation implements Runnable
 		);
 	}
 
+	public void createRandomProtozoa() {
+		environment.createRandomProtozoa(100);
+	}
+
 	public void update()
 	{
 		if (isPaused() || busyOnOtherThread || environment == null)
 			return;
+
+		if (environment.numberOfProtozoa() < 50){
+			System.out.println("Less than 50 protozoa, creating new protozoa.");
+			environment.createRandomProtozoa(500);
+		}
 
 		try {
 			float delta = timeDilation * Environment.settings.simulationUpdateDelta.get();
