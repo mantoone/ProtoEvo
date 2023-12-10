@@ -4,6 +4,7 @@ import com.protoevo.core.ApplicationManager;
 import com.protoevo.core.Simulation;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,11 +52,16 @@ public class REPL implements Runnable
         while (running)
         {
             String line;
-            try
-            {
                 System.out.print("> ");
-                line = bufferRead.readLine();
+                try {
+                    line = bufferRead.readLine();
+                } catch (IOException e){
+                    System.out.println("Error reading input.");
+                    line = "";
+                    continue;
+                }
 
+                System.out.println("Line is: " + line);
                 if (line.equals("\n") || stripWhitespace(line).equals("")) {
                     System.out.println();
                     continue;
@@ -75,10 +81,6 @@ public class REPL implements Runnable
                 } else {
                     System.out.println("Command not recognised.");
                 }
-            }
-            catch (Exception e) {
-                System.out.println("Failed with message: " + e.getMessage());
-            }
         }
     }
 
