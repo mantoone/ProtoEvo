@@ -57,6 +57,7 @@ public class Environment implements Serializable
 		cellClassNames.put(MeatCell.class, "Meat");
 	}
 	private volatile long crossoverEvents = 0;
+	private volatile double availableEnergy = 10;
 
 	@JsonIgnore
 	private transient Set<Cell> cellsToAdd;
@@ -154,7 +155,17 @@ public class Environment implements Serializable
 		handledBurstRequests.clear();
 		for (Cell parent : burstRequests.keySet()) {
 			BurstRequest<? extends Cell> burstRequest = burstRequests.get(parent);
+
 			if (hasBurstCapacity(parent, burstRequest.getCellType()) && burstRequest.canBurst()) {
+				// Check that there's enough available energy in the environment to split
+				if( burstRequest.getCellType().equals(PlantCell.class) ) {
+					if( this.availableEnergy < Environment.settings.plant.splitEnergy.get() ) {
+						continue;
+					} else {
+						this.availableEnergy -= Environment.settings.plant.splitEnergy.get();
+					}
+				}
+
 				burstRequest.burst();
 				handledBurstRequests.add(parent);
 			}
@@ -461,6 +472,9 @@ public class Environment implements Serializable
 			if (count > 0)
 				stats.putCount("Died from " + cod.getReason(), count);
 		}
+
+		stats.put("Available energy", availableEnergy, null);
+
 		return stats;
 	}
 
@@ -626,5 +640,13 @@ public class Environment implements Serializable
 
 	public String getSimulationName() {
 		return simulationName;
+	}
+
+	public double getAvailableEnergy() {
+		return availableEnergy;
+	}
+
+	public void addAvailableEnergy(double energy) {
+		availableEnergy += energy;
 	}
 }

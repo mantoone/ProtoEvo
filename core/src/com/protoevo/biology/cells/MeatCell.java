@@ -24,7 +24,10 @@ public class MeatCell extends Cell {
 
     public void age(float delta) {
         float deathRate = getRadius() * delta * Environment.settings.meatDeathFactor.get();
-        damage(getHealth() * deathRate, CauseOfDeath.MEAT_DECAY);
+        float prevHealth = getHealth();
+        damage(deathRate * prevHealth, CauseOfDeath.MEAT_DECAY);
+        float healthDiff =  prevHealth - getHealth();
+        this.getEnv().get().addAvailableEnergy(healthDiff);
     }
 
     @Override

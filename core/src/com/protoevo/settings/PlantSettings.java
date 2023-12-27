@@ -32,6 +32,10 @@ public class PlantSettings extends Settings {
             "Min Health to Split",
             "Minimum health required to produce children.",
             0.15f);
+    public final Settings.Parameter<Float> splitEnergy = new Settings.Parameter<>(
+            "Energy consumed by splitting",
+            "Amount of energy required to split and how much energy is consumed by doing so.",
+            15f);
     public final Settings.Parameter<Float> geneExpressionInterval = new Settings.Parameter<>(
             "Gene Expression Interval",
             "The amount of in-simulation time between ticking the Gene Regulatory Networks of plants.",

@@ -38,15 +38,15 @@ public class MiscSettings extends Settings {
     public final Settings.Parameter<Integer> maxPlants = new Settings.Parameter<>(
             "Max Plants",
             "The maximum number of plants that can exist in the simulation.",
-            500);
+            50000);
     public final Settings.Parameter<Integer> maxProtozoa = new Settings.Parameter<>(
             "Max Protozoa",
             "The maximum number of protozoa that can exist in the simulation.",
-            1000);
+            4000);
     public final Settings.Parameter<Integer> maxMeat = new Settings.Parameter<>(
             "Max Meat",
             "The maximum number of meat that can exist in the simulation.",
-            750);
+            7500);
     public final Settings.Parameter<Integer> protozoaLocalCap = new Settings.Parameter<>(
             "Local Protozoa Cap",
             "The maximum number of protozoa that can exist in a local region (defined by the spatial hash resolution).",
@@ -62,11 +62,11 @@ public class MiscSettings extends Settings {
     public final Settings.Parameter<Boolean> useCUDA = new Settings.Parameter<>(
             "Use CUDA",
             "Whether or not to use the CUDA for accelerating calculations on the GPU.",
-            false);
+            true);
     public final Settings.Parameter<Boolean> useOpenGLComputeShader = new Settings.Parameter<>(
             "Use OpenGL Compute Shader",
             "Whether or not to use OpenGL compute shaders for accelerating calculations on the GPU.",
-            true);
+            false);
     public final Settings.Parameter<Integer> chemicalCPUIterations = new Settings.Parameter<>(
             "CPU Chemical Diffusion Iterations",
             "Number of chemical diffusion iterations to perform when running on the CPU.",
