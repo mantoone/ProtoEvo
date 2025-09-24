@@ -104,6 +104,8 @@ public class ProtozoaRenderer {
                 put(Photoreceptor.class, PhotoreceptorRenderer::new);
                 put(Spike.class, SpikeRenderer::new);
                 put(AdhesionReceptor.class, AdhesionRenderer::new);
+                put(ChemicalSignalingReceptor.class, ChemicalSignalingRenderer::new);
+                put(SocialCoordinationReceptor.class, SocialCoordinationRenderer::new);
             }
         };
 

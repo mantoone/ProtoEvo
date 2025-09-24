@@ -27,6 +27,8 @@ public abstract class NodeAttachment implements Serializable, Constructable {
                     MeatOnlyPhagocyticReceptor.class,
                     Photoreceptor.class,
                     AdhesionReceptor.class,
+                    ChemicalSignalingReceptor.class,
+                    SocialCoordinationReceptor.class,
             };
         } else {
             possibleAttachments = new Class[]{
@@ -35,6 +37,8 @@ public abstract class NodeAttachment implements Serializable, Constructable {
                     PhagocyticReceptor.class,
                     Photoreceptor.class,
                     AdhesionReceptor.class,
+                    ChemicalSignalingReceptor.class,
+                    SocialCoordinationReceptor.class,
             };
         }
     }

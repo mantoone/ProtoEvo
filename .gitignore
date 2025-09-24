@@ -266,3 +266,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+.bloop
+.metals
