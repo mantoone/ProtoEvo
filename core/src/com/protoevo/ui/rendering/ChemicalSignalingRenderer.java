@@ -84,7 +84,7 @@ public class ChemicalSignalingRenderer extends NodeRenderer {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         
         Vector2 nodePos = node.getWorldPosition();
-        float radius = cell.getRadius() * 0.15f * node.getAttachmentConstructionProgress();
+        float radius = cell.getRadius() * 0.25f * node.getAttachmentConstructionProgress(); // Increased from 0.15f to 0.25f
         
         // Add pulsing effect based on signal activity
         float pulseMultiplier = 1f + 0.3f * signalIntensity * (float) Math.sin(pulsation);
@@ -105,22 +105,25 @@ public class ChemicalSignalingRenderer extends NodeRenderer {
     
     private void renderSignalTransmission(ShapeRenderer shapeRenderer, Vector2 nodePos, float delta) {
         ChemicalSignalingReceptor receptor = (ChemicalSignalingReceptor) node.getAttachment();
-        float transmissionRange = receptor.getInteractionRange();
+        Cell cell = node.getCell();
+        
+        // Use a visual range that's just a bit bigger than the cell, not the actual interaction range
+        float visualRange = cell.getRadius() * 2.5f; // Much smaller than the actual interaction range
         
         // Draw expanding signal waves
-        float waveRadius = (float) (transmissionRange * 0.5f * Math.sin(pulsation * 0.7f));
+        float waveRadius = (float) (visualRange * 0.6f * Math.sin(pulsation * 0.7f));
         if (waveRadius > 0) {
             shapeRenderer.setColor(signalColor.r, signalColor.g, signalColor.b, 
                                  signalColor.a * 0.3f);
-            shapeRenderer.circle(nodePos.x, nodePos.y, waveRadius, Math.max(8, (int)(waveRadius / 5)));
+            shapeRenderer.circle(nodePos.x, nodePos.y, waveRadius, Math.max(8, (int)(waveRadius / 2)));
         }
         
         // Draw second wave for complex pattern
-        float waveRadius2 = (float) (transmissionRange * 0.3f * Math.sin(pulsation * 1.2f + Math.PI/2));
+        float waveRadius2 = (float) (visualRange * 0.4f * Math.sin(pulsation * 1.2f + Math.PI/2));
         if (waveRadius2 > 0) {
             shapeRenderer.setColor(signalColor.r, signalColor.g, signalColor.b, 
                                  signalColor.a * 0.2f);
-            shapeRenderer.circle(nodePos.x, nodePos.y, waveRadius2, Math.max(6, (int)(waveRadius2 / 4)));
+            shapeRenderer.circle(nodePos.x, nodePos.y, waveRadius2, Math.max(6, (int)(waveRadius2 / 2)));
         }
     }
     

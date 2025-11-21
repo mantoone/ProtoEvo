@@ -387,6 +387,14 @@ public class ChemicalSolution implements Serializable {
         timeSinceUpdate += delta;
         if (timeSinceUpdate > delta * Environment.settings.env.chemicalDiffusionInterval.get()) {
             diffuse();
+            
+            if (environment.getFluidField() != null) {
+                loadIntoByteBuffer();
+                environment.getFluidField().advectChemicals(
+                    byteBuffer, chemicalTextureWidth, chemicalTextureHeight, delta);
+                unloadFromByteBuffer();
+            }
+            
             timeSinceUpdate = 0;
         }
         deposit(delta);

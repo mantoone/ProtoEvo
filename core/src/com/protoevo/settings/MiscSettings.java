@@ -62,11 +62,11 @@ public class MiscSettings extends Settings {
     public final Parameter<Boolean> useCUDA = new Parameter<>(
             "Use CUDA",
             "Whether or not to use the CUDA for accelerating calculations on the GPU.",
-            false);
+            true);
     public final Parameter<Boolean> useOpenGLComputeShader = new Parameter<>(
             "Use OpenGL Compute Shader",
             "Whether or not to use OpenGL compute shaders for accelerating calculations on the GPU.",
-            true);
+            false);
     public final Parameter<Integer> chemicalCPUIterations = new Parameter<>(
             "CPU Chemical Diffusion Iterations",
             "Number of chemical diffusion iterations to perform when running on the CPU.",

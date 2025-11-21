@@ -269,3 +269,8 @@ dmypy.json
 
 .bloop
 .metals
+assets/kernels/chemical_advect.ptx
+assets/kernels/fluid_advect.ptx
+assets/kernels/fluid_divergence.ptx
+assets/kernels/fluid_lin_solve.ptx
+assets/kernels/fluid_subtract_gradient.ptx

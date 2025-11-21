@@ -51,6 +51,7 @@ public class Environment implements Serializable
 	private Map<Class<? extends Cell>, SerializableFunction<Float, Vector2>> spawnPositionFns;
 
 	private final ChemicalSolution chemicalSolution;
+	private final FluidField fluidField;
 	private final LightManager light;
 	private final TimeManager timeManager;
 	private final List<Rock> rocks = new ArrayList<>();
@@ -97,6 +98,13 @@ public class Environment implements Serializable
 			chemicalSolution = null;
 		}
 
+		if (Environment.settings.misc.useCUDA.get()) {
+			int fluidSize = Environment.settings.worldgen.chemicalFieldResolution.get();
+			fluidField = new FluidField(fluidSize, fluidSize);
+		} else {
+			fluidField = null;
+		}
+
 		timeManager = new TimeManager();
 
 		int lightDim = Environment.settings.worldgen.lightMapResolution.get();
@@ -138,6 +146,24 @@ public class Environment implements Serializable
 		light.update(delta);
 
 		physics.step(delta);
+		
+		if (fluidField != null) {
+			fluidField.step(delta);
+			
+			float fieldRadius = Environment.settings.worldgen.chemicalFieldRadius.get();
+			float dragCoeff = 5.0f; // TODO: Make this a setting
+			
+			for (Cell cell : getCells()) {
+				Particle p = cell.getParticle();
+				Vector2 pos = p.getPos();
+				Vector2 fluidVel = fluidField.getVelocityAt(pos.x, pos.y, fieldRadius);
+				Vector2 particleVel = p.getVel();
+				
+				// Drag force: F = m * Cd * (V_fluid - V_particle)
+				Vector2 force = new Vector2(fluidVel).sub(particleVel).scl(dragCoeff * p.getMass());
+				p.applyForce(force);
+			}
+		}
 
   		handleCellUpdates(delta);
 		handleBirthsAndDeaths();
@@ -549,6 +575,10 @@ public class Environment implements Serializable
 
 	public ChemicalSolution getChemicalSolution() {
 		return chemicalSolution;
+	}
+
+	public FluidField getFluidField() {
+		return fluidField;
 	}
 
 	public List<Rock> getRocks() {
