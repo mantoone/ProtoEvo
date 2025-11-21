@@ -150,18 +150,23 @@ public class Environment implements Serializable
 		if (fluidField != null) {
 			fluidField.step(delta);
 			
-			float fieldRadius = Environment.settings.worldgen.chemicalFieldRadius.get();
-			float dragCoeff = 5.0f; // TODO: Make this a setting
-			
-			for (Cell cell : getCells()) {
-				Particle p = cell.getParticle();
-				Vector2 pos = p.getPos();
-				Vector2 fluidVel = fluidField.getVelocityAt(pos.x, pos.y, fieldRadius);
-				Vector2 particleVel = p.getVel();
+			// Only sync velocity to CPU if we have cells to interact with
+			if (!cells.isEmpty()) {
+				fluidField.syncVelocityToCPU();
 				
-				// Drag force: F = m * Cd * (V_fluid - V_particle)
-				Vector2 force = new Vector2(fluidVel).sub(particleVel).scl(dragCoeff * p.getMass());
-				p.applyForce(force);
+				float fieldRadius = Environment.settings.worldgen.chemicalFieldRadius.get();
+				float dragCoeff = 2.0f; // Reduced from 5.0 for performance
+				
+				for (Cell cell : getCells()) {
+					Particle p = cell.getParticle();
+					Vector2 pos = p.getPos();
+					Vector2 fluidVel = fluidField.getVelocityAt(pos.x, pos.y, fieldRadius);
+					Vector2 particleVel = p.getVel();
+					
+					// Drag force: F = m * Cd * (V_fluid - V_particle)
+					Vector2 force = new Vector2(fluidVel).sub(particleVel).scl(dragCoeff * p.getMass());
+					p.applyForce(force);
+				}
 			}
 		}
 

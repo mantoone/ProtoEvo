@@ -172,8 +172,9 @@ public class FluidField {
         float a = dt * diff * (width - 2) * (height - 2);
         float c = 1 + 4 * a;
         
-        // Iterations for diffusion
-        for (int i = 0; i < 20; i++) {
+        // Iterations for diffusion - reduced from 20 to 4 for performance
+        // 4 iterations is sufficient for real-time fluid sim
+        for (int i = 0; i < 4; i++) {
             // vx
             launchLinSolve(d_vx, d_vx, d_vx0, a, c);
             // vy
@@ -192,10 +193,16 @@ public class FluidField {
         // Advect velocity field (both components at once)
         launchAdvectVelocity(dt);
 
+
         // 4. Project again
         project();
+    }
+    
+    public void syncVelocityToCPU() {
+        if (!initialized) return;
+        cuCtxSetCurrent(context);
         
-        // 5. Copy back to host for CPU interaction
+        // Copy velocity data to host for CPU-side queries
         cuMemcpyDtoH(Pointer.to(vx), d_vx, (long) size * Sizeof.FLOAT);
         cuMemcpyDtoH(Pointer.to(vy), d_vy, (long) size * Sizeof.FLOAT);
     }
@@ -208,7 +215,9 @@ public class FluidField {
         cuMemsetD32(d_p, 0, size);
         
         // Solve pressure (Poisson equation)
-        for (int i = 0; i < 20; i++) {
+        // Reduced from 20 to 8 iterations for performance
+        // 8 is enough to maintain reasonable incompressibility
+        for (int i = 0; i < 8; i++) {
             launchLinSolve(d_p, d_p, d_div, 1, 4);
         }
         
