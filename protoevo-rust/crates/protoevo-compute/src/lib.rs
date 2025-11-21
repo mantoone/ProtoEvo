@@ -11,40 +11,19 @@ struct DiffusionParams {
 }
 
 pub struct ChemicalFieldCompute {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
     pipeline: wgpu::ComputePipeline,
-    bind_group_layout: wgpu::BindGroupLayout,
+    bind_group: wgpu::BindGroup,
     
     input_buffer: wgpu::Buffer,
     output_buffer: wgpu::Buffer,
     params_buffer: wgpu::Buffer,
-    bind_group: wgpu::BindGroup,
     
     width: u32,
     height: u32,
 }
 
 impl ChemicalFieldCompute {
-    pub async fn new(width: u32, height: u32) -> Self {
-        let instance = wgpu::Instance::default();
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions::default())
-            .await
-            .expect("Failed to find an appropriate adapter");
-
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("Compute Device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                },
-                None,
-            )
-            .await
-            .expect("Failed to create device");
-
+    pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Diffusion Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("diffusion.wgsl").into()),
@@ -149,10 +128,7 @@ impl ChemicalFieldCompute {
         });
 
         Self {
-            device,
-            queue,
             pipeline,
-            bind_group_layout,
             input_buffer,
             output_buffer,
             params_buffer,
@@ -162,8 +138,8 @@ impl ChemicalFieldCompute {
         }
     }
 
-    pub fn step(&mut self) {
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+    pub fn step(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Compute Encoder"),
         });
 
@@ -189,6 +165,36 @@ impl ChemicalFieldCompute {
             (self.width * self.height * 16) as u64
         );
 
-        self.queue.submit(Some(encoder.finish()));
+        queue.submit(Some(encoder.finish()));
+    }
+
+    pub fn copy_to_texture(&self, device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture) {
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Texture Copy Encoder"),
+        });
+
+        encoder.copy_buffer_to_texture(
+            wgpu::ImageCopyBuffer {
+                buffer: &self.output_buffer,
+                layout: wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(self.width * 16), // 4 floats * 4 bytes
+                    rows_per_image: Some(self.height),
+                },
+            },
+            wgpu::ImageCopyTexture {
+                texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        queue.submit(Some(encoder.finish()));
     }
 }
