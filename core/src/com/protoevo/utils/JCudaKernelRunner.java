@@ -108,10 +108,18 @@ public class JCudaKernelRunner {
         // Call the kernel function.
         int gridSizeX = (int) Math.ceil((double) w / blockSizeX);
         int gridSizeY = (int) Math.ceil((double) h / blockSizeY);
+        
+        // Calculate shared memory size for the optimized kernel
+        // Tile size includes block + 2*FILTER_RADIUS (halo) for each dimension
+        // FILTER_RADIUS = 1 for 3x3 filter
+        int tileWidth = blockSizeX + 2;  // blockSizeX + 2*FILTER_RADIUS
+        int tileHeight = blockSizeY + 2; // blockSizeY + 2*FILTER_RADIUS
+        int sharedMemSize = tileWidth * tileHeight * c * Sizeof.BYTE;
+        
         cuLaunchKernel(function,
                 gridSizeX, gridSizeY, 1,      // Grid dimension
                 blockSizeX, blockSizeY, 1,      // Block dimension
-                0, null,               // Shared memory size and stream
+                sharedMemSize, null,               // Shared memory size and stream
                 kernelParameters, null // Kernel- and extra parameters
         );
 

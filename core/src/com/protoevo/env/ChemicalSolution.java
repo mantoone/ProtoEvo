@@ -27,6 +27,8 @@ public class ChemicalSolution implements Serializable {
     private float timeSinceUpdate = 0;
     private transient JCudaKernelRunner cudaDiffusionKernel;
     private transient GLComputeShaderRunner openGLDiffusionShader;
+    private transient boolean bufferDirty = true;  // Track if buffer needs reload
+    private int diffusionCallCount = 0;  // For adaptive diffusion rate
 
     public interface ChemicalUpdatedCallback {
         void onChemicalUpdated(int i, int j, Colour colour);
@@ -255,8 +257,11 @@ public class ChemicalSolution implements Serializable {
     }
 
     private void cudaDiffuse() {
-
-        loadIntoByteBuffer();
+        // Only load from colours array if deposit has made changes
+        if (bufferDirty) {
+            loadIntoByteBuffer();
+            bufferDirty = false;
+        }
 
         try {
             if (cudaDiffusionKernel == null)
@@ -280,7 +285,12 @@ public class ChemicalSolution implements Serializable {
     }
 
     private void openGLDiffuse() {
-        loadIntoByteBuffer();
+        // Only load from colours array if deposit has made changes
+        if (bufferDirty) {
+            loadIntoByteBuffer();
+            bufferDirty = false;
+        }
+        
         if (openGLDiffusionShader == null)
             initialise();
 
@@ -384,12 +394,19 @@ public class ChemicalSolution implements Serializable {
             initialise();
         }
 
+        // Deposit first, then diffuse - this way buffer stays clean between diffusion calls
+        deposit(delta);
+        
         timeSinceUpdate += delta;
         if (timeSinceUpdate > delta * Environment.settings.env.chemicalDiffusionInterval.get()) {
             diffuse();
             timeSinceUpdate = 0;
+            diffusionCallCount++;
+            // Buffer is now clean after diffusion (bufferDirty reset to false in diffuse methods)
+        } else {
+            // Mark buffer as dirty since we deposited but didn't diffuse
+            bufferDirty = true;
         }
-        deposit(delta);
     }
 
     public Colour[][] getImage() {
