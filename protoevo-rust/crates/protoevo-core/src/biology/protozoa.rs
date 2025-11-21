@@ -42,9 +42,14 @@ impl Protozoan {
 
 impl Cell for Protozoan {
     fn update(&mut self, delta: f32) {
-        // Protozoan logic (movement, eating, etc.)
-        self.energy -= delta * 0.1; // Metabolic cost
+        // Protozoan consumes energy for life
+        const ENERGY_CONSUMPTION_RATE: f32 = 10.0; // Per second
+        self.energy -= delta * ENERGY_CONSUMPTION_RATE;
         
+        // Clamp energy
+        self.energy = self.energy.max(0.0).min(1000.0);
+        
+        // Death conditions
         if self.health <= 0.0 || self.energy <= 0.0 {
             self.is_dead = true;
         }

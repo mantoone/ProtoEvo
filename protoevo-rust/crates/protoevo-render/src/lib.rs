@@ -14,6 +14,12 @@ use protoevo_compute::ChemicalFieldCompute;
 mod cell_systems;
 use cell_systems::{update_cells, handle_cell_death};
 
+mod ui_systems;
+use ui_systems::{spawn_energy_bars, update_energy_bars};
+
+mod movement_systems;
+use movement_systems::protozoan_movement;
+
 pub struct RenderPlugin;
 
 #[derive(Resource, Clone, ExtractResource)]
@@ -39,11 +45,14 @@ impl Plugin for RenderPlugin {
         .add_systems(Update, (
             camera_control,
             update_cells,
+            protozoan_movement,
             handle_cell_death,
             sync_physics_transforms,
             spawn_plant_visuals,
             spawn_protozoa_visuals,
             spawn_meat_visuals,
+            spawn_energy_bars,
+            update_energy_bars,
         ));
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
