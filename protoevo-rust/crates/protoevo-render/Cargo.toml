@@ -1,0 +1,15 @@
+[package]
+name = "protoevo-render"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = { workspace = true }
+bevy = { workspace = true }
+glam = { workspace = true }
+log = { workspace = true }
+rapier2d = { workspace = true }
+
+# Internal dependencies
+protoevo-core = { path = "../protoevo-core" }
+protoevo-compute = { path = "../protoevo-compute" }

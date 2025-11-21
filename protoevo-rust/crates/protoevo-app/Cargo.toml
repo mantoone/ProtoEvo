@@ -1,0 +1,18 @@
+[package]
+name = "protoevo-app"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "protoevo"
+path = "src/main.rs"
+
+[dependencies]
+bevy = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
+
+# Internal dependencies
+protoevo-core = { path = "../protoevo-core" }
+protoevo-compute = { path = "../protoevo-compute" }
+protoevo-render = { path = "../protoevo-render" }

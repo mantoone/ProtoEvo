@@ -1,0 +1,14 @@
+[package]
+name = "protoevo-compute"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+glam = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+
+# Internal dependencies
+protoevo-core = { path = "../protoevo-core" }

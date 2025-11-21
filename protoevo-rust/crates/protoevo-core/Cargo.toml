@@ -1,0 +1,17 @@
+[package]
+name = "protoevo-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core simulation dependencies
+rapier2d = { workspace = true }
+glam = { workspace = true }
+serde = { workspace = true }
+bincode = { workspace = true }
+rand = { workspace = true }
+rayon = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+bevy = { workspace = true }
+toml = "0.8"
