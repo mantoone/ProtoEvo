@@ -4,25 +4,19 @@ pub mod color;
 pub mod physics;
 pub mod biology;
 
-pub use settings::Settings;
-pub use color::Color;
-pub use rapier2d;
-
 use bevy::prelude::*;
-use crate::physics::PhysicsWorld;
+use settings::Settings;
 
+/// Main simulation context resource
 #[derive(Resource)]
 pub struct SimulationContext {
-    pub physics: PhysicsWorld,
     pub settings: Settings,
 }
 
-impl SimulationContext {
-    pub fn new() -> Self {
-        let settings = Settings::default();
+impl Default for SimulationContext {
+    fn default() -> Self {
         Self {
-            physics: PhysicsWorld::new(&settings),
-            settings,
+            settings: Settings::default(),
         }
     }
 }

@@ -9,10 +9,10 @@ path = "src/main.rs"
 
 [dependencies]
 bevy = { workspace = true }
+bevy_rapier2d = { workspace = true }
 env_logger = { workspace = true }
-log = { workspace = true }
 
 # Internal dependencies
 protoevo-core = { path = "../protoevo-core" }
-protoevo-compute = { path = "../protoevo-compute" }
 protoevo-render = { path = "../protoevo-render" }
+rand.workspace = true

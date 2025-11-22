@@ -1,15 +1,14 @@
 use bevy::prelude::*;
-use protoevo_core::biology::{PlantCell, Protozoan, MeatCell};
-use protoevo_core::SimulationContext;
-use rapier2d::prelude::*;
-
-use bevy::render::renderer::{RenderDevice, RenderQueue};
+use bevy_rapier2d::prelude::*;
 use bevy::render::render_asset::RenderAssets;
-use bevy::render::render_resource::TextureUsages;
+use bevy::render::renderer::{RenderDevice, RenderQueue};
 use bevy::render::texture::GpuImage;
 use bevy::render::extract_resource::{ExtractResource, ExtractResourcePlugin};
 use bevy::render::{Render, RenderApp, RenderSet};
+use bevy::window::PrimaryWindow;
 use protoevo_compute::ChemicalFieldCompute;
+use protoevo_core::biology::{PlantCell, Protozoan, MeatCell};
+use protoevo_core::physics::{PhysicsConfig, create_particle_bundle};
 
 mod cell_systems;
 use cell_systems::{update_cells, handle_cell_death};
@@ -20,233 +19,143 @@ use ui_systems::{spawn_energy_bars, update_energy_bars};
 mod movement_systems;
 use movement_systems::protozoan_movement;
 
+mod feeding_systems;
+pub use feeding_systems::{handle_feeding, update_cell_sizes, Edible, Eater};
+
 pub struct RenderPlugin;
 
+// Chemical field resources (currently disabled)
 #[derive(Resource, Clone, ExtractResource)]
-pub struct ChemicalFieldImage(pub Handle<Image>);
+struct ChemicalFieldImage {
+    handle: Handle<Image>,
+}
 
 #[derive(Resource)]
-pub struct ChemicalFieldResource(pub ChemicalFieldCompute);
+struct ChemicalFieldResource {
+    compute: ChemicalFieldCompute,
+}
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "ProtoEvo Rust".into(),
-                resolution: (1280.0, 720.0).into(),
-                present_mode: bevy::window::PresentMode::AutoVsync,
-                ..default()
-            }),
-            ..default()
-        }))
-        .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.1)))
-        .add_plugins(ExtractResourcePlugin::<ChemicalFieldImage>::default())
-        .add_systems(Startup, (setup_camera, setup_chemical_field_main))
+        app
+        // Add rapier physics plugin
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
+        .add_plugins(RapierDebugRenderPlugin::default())
+        .insert_resource(PhysicsConfig::default())
+        
+        // Window setup
+        .add_systems(Startup, setup_window)
+        
+        // Update systems
         .add_systems(Update, (
             camera_control,
             update_cells,
+            update_cell_sizes,
             protozoan_movement,
+            handle_feeding,
             handle_cell_death,
-            sync_physics_transforms,
             spawn_plant_visuals,
             spawn_protozoa_visuals,
             spawn_meat_visuals,
             spawn_energy_bars,
             update_energy_bars,
         ));
-
-        if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
-            render_app
-                .add_systems(Startup, setup_chemical_field_render)
-                .add_systems(Render, update_chemical_field_render.in_set(RenderSet::Prepare));
-        }
     }
 }
 
-#[derive(Component)]
-pub struct CameraController {
-    pub zoom_speed: f32,
-    pub pan_speed: f32,
-}
-
-impl Default for CameraController {
-    fn default() -> Self {
-        Self {
-            zoom_speed: 0.1,
-            pan_speed: 1.0,
-        }
-    }
-}
-
-fn camera_control(
-    mut query: Query<(&mut Transform, &mut OrthographicProjection, &CameraController)>,
-    mouse_button: Res<ButtonInput<MouseButton>>,
-    mut mouse_motion: EventReader<bevy::input::mouse::MouseMotion>,
-    mut mouse_wheel: EventReader<bevy::input::mouse::MouseWheel>,
-    time: Res<Time>,
-) {
-    for (mut transform, mut projection, controller) in query.iter_mut() {
-        // Zoom with scroll wheel
-        for event in mouse_wheel.read() {
-            let zoom_delta = -event.y * controller.zoom_speed;
-            projection.scale *= 1.0 + zoom_delta;
-            projection.scale = projection.scale.clamp(0.1, 10.0);
-        }
-
-        // Pan with middle mouse button
-        if mouse_button.pressed(MouseButton::Middle) {
-            for event in mouse_motion.read() {
-                let pan_delta = Vec2::new(-event.delta.x, event.delta.y);
-                transform.translation.x += pan_delta.x * projection.scale * controller.pan_speed;
-                transform.translation.y += pan_delta.y * projection.scale * controller.pan_speed;
-            }
-        }
-    }
-}
-
-fn setup_camera(mut commands: Commands) {
-    commands.spawn((
-        Camera2dBundle::default(),
-        CameraController::default(),
-    ));
-}
-
-#[derive(Component)]
-pub struct PhysicsHandle(pub RigidBodyHandle);
-
-fn sync_physics_transforms(
-    simulation: Res<SimulationContext>,
-    mut query: Query<(&mut Transform, &PhysicsHandle)>,
-) {
-    for (mut transform, handle) in query.iter_mut() {
-        if let Some(body) = simulation.physics.rigid_body_set.get(handle.0) {
-            let translation = body.translation();
-            transform.translation.x = translation.x;
-            transform.translation.y = translation.y;
-            // transform.rotation = Quat::from_rotation_z(body.rotation().angle());
-        }
-    }
-}
-
-fn setup_chemical_field_main(
-    mut commands: Commands,
-    mut images: ResMut<Assets<Image>>,
-) {
-    let size = wgpu::Extent3d {
-        width: 512,
-        height: 512,
-        depth_or_array_layers: 1,
-    };
-    let mut image = Image::new_fill(
-        size,
-        bevy::render::render_resource::TextureDimension::D2,
-        &[0; 16], // 16 bytes for Rgba32Float (4 * 4 bytes)
-        bevy::render::render_resource::TextureFormat::Rgba32Float,
-        bevy::render::render_asset::RenderAssetUsages::RENDER_WORLD,
-    );
-    image.texture_descriptor.usage |= wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::STORAGE_BINDING;
-
-    let handle = images.add(image);
-
-    commands.spawn(SpriteBundle {
-        texture: handle.clone(),
-        sprite: Sprite {
-            custom_size: Some(Vec2::new(1280.0, 1280.0)),
-            ..default()
-        },
-        ..default()
+fn setup_window(mut commands: Commands) {
+    // Spawn 2D camera
+    commands.spawn(Camera2dBundle::default()).insert(CameraController {
+        pan_sensitivity: 1.0,
+        zoom_sensitivity: 0.1,
+        last_cursor_pos: None,
     });
-
-    commands.insert_resource(ChemicalFieldImage(handle));
 }
 
-fn setup_chemical_field_render(
-    mut commands: Commands,
-    device: Res<RenderDevice>,
-) {
-    let compute = ChemicalFieldCompute::new(device.wgpu_device(), 512, 512);
-    commands.insert_resource(ChemicalFieldResource(compute));
-    bevy::log::info!("ChemicalFieldResource initialized in Render App");
+/// Camera controller component
+#[derive(Component)]
+struct CameraController {
+    pan_sensitivity: f32,
+    zoom_sensitivity: f32,
+    last_cursor_pos: Option<Vec2>,
 }
 
-fn update_chemical_field_render(
-    chemical_field: Option<ResMut<ChemicalFieldResource>>,
-    device: Res<RenderDevice>,
-    queue: Res<RenderQueue>,
-    image_handle: Res<ChemicalFieldImage>,
-    gpu_images: Res<RenderAssets<GpuImage>>,
+/// System for camera controls
+fn camera_control(
+    mut query: Query<(&mut Transform, &mut OrthographicProjection, &mut CameraController)>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    mouse_button: Res<ButtonInput<MouseButton>>,
+    mut mouse_wheel: EventReader<bevy::input::mouse::MouseWheel>,
 ) {
-    if let Some(mut chemical_field) = chemical_field {
-        if let Some(gpu_image) = gpu_images.get(&image_handle.0) {
-            chemical_field.0.step(device.wgpu_device(), &queue);
-            chemical_field.0.copy_to_texture(device.wgpu_device(), &queue, &gpu_image.texture);
+    let (mut transform, mut projection, mut controller) = query.single_mut();
+    let Ok(window) = window_query.get_single() else { return };
+    
+    // Pan with middle mouse button
+    if mouse_button.pressed(MouseButton::Middle) {
+        if let Some(cursor_pos) = window.cursor_position() {
+            if let Some(last_pos) = controller.last_cursor_pos {
+                let delta = cursor_pos - last_pos;
+                transform.translation.x -= delta.x * projection.scale * controller.pan_sensitivity;
+                transform.translation.y += delta.y * projection.scale * controller.pan_sensitivity;
+            }
+            controller.last_cursor_pos = Some(cursor_pos);
         }
     } else {
-        // bevy::log::warn!("ChemicalFieldResource missing in Render App");
+        controller.last_cursor_pos = None;
+    }
+    
+    //Zoom with scroll wheel
+    for wheel in mouse_wheel.read() {
+        let zoom_delta = -wheel.y * 0.1;
+        projection.scale = (projection.scale + zoom_delta).max(0.1).min(10.0);
     }
 }
 
+/// Spawn visual for PlantCell
 fn spawn_plant_visuals(
     mut commands: Commands,
-    query: Query<(Entity, &PlantCell), Added<PlantCell>>,
+    query: Query<Entity, Added<PlantCell>>,
 ) {
-    for (entity, plant) in query.iter() {
-        commands.entity(entity).insert((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::srgb(0.2, 0.8, 0.2),
-                    custom_size: Some(Vec2::new(plant.radius * 2.0, plant.radius * 2.0)),
-                    ..default()
-                },
+    for entity in query.iter() {
+        commands.entity(entity).insert(
+            Sprite {
+                color: Color::srgb(0.2, 0.8, 0.2),
+                custom_size: Some(Vec2::new(10.0, 10.0)),
                 ..default()
             },
-            PhysicsHandle(plant.body_handle),
-        ));
+        );
     }
 }
 
+/// Spawn visual for Protozoan
 fn spawn_protozoa_visuals(
     mut commands: Commands,
-    query: Query<(Entity, &Protozoan), Added<Protozoan>>,
+    query: Query<Entity, Added<Protozoan>>,
 ) {
-    for (entity, protozoan) in query.iter() {
-        commands.entity(entity).insert((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::srgb(1.0, 1.0, 1.0),
-                    custom_size: Some(Vec2::new(protozoan.radius * 2.0, protozoan.radius * 2.0)),
-                    ..default()
-                },
+    for entity in query.iter() {
+        commands.entity(entity).insert(
+            Sprite {
+                color: Color::srgb(0.9, 0.9, 0.9),
+                custom_size: Some(Vec2::new(12.0, 12.0)),
                 ..default()
             },
-            PhysicsHandle(protozoan.body_handle),
-        ));
+        );
     }
 }
 
+/// Spawn visual for MeatCell
 fn spawn_meat_visuals(
     mut commands: Commands,
     query: Query<(Entity, &MeatCell), Added<MeatCell>>,
 ) {
     for (entity, meat) in query.iter() {
-        // Brown/gray color with health-based alpha
-        let health_factor = (meat.health / 100.0).clamp(0.0, 1.0);
-        let base_color = Color::srgb(0.6, 0.3, 0.2); // Brown
-        commands.entity(entity).insert((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::srgba(
-                        base_color.to_srgba().red,
-                        base_color.to_srgba().green,
-                        base_color.to_srgba().blue,
-                        0.3 + 0.7 * health_factor,
-                    ),
-                    custom_size: Some(Vec2::new(meat.radius * 2.0, meat.radius * 2.0)),
-                    ..default()
-                },
+        let alpha = (meat.health / 100.0).max(0.1);
+        commands.entity(entity).insert(
+            Sprite {
+                color: Color::srgba(0.6, 0.4, 0.3, alpha),
+                custom_size: Some(Vec2::new(10.0, 10.0)),
                 ..default()
             },
-            PhysicsHandle(meat.body_handle),
-        ));
+        );
     }
 }
