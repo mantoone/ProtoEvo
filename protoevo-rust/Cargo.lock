@@ -2975,6 +2975,7 @@ dependencies = [
  "log",
  "protoevo-compute",
  "protoevo-core",
+ "rand",
 ]
 
 [[package]]

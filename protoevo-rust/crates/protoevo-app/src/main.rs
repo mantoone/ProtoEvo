@@ -7,10 +7,13 @@ use rand::Rng;
 fn main() {
     env_logger::init();
     
+    let context = SimulationContext::default();
+    
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(RenderPlugin)
-        .insert_resource(SimulationContext::default())
+        .insert_resource(context.settings.clone())
+        .insert_resource(context)
         .add_systems(Startup, setup_simulation)
         .run();
 }
@@ -30,8 +33,9 @@ fn setup_simulation(mut commands: Commands) {
         let (rigid_body, collider, mass_props, damping, transform) = 
             create_particle_bundle(pos, radius, 1.0, 5.0);
 
+        let max_radius = radius * rng.gen_range(1.5..2.5);
         commands.spawn((
-            PlantCell::new(radius),
+            PlantCell::new(radius, max_radius),
             rigid_body,
             collider,
             mass_props,

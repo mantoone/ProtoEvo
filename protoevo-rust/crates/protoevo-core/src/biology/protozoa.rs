@@ -24,7 +24,7 @@ impl Protozoan {
 }
 
 impl Cell for Protozoan {
-    fn update(&mut self, delta: f32) {
+    fn update(&mut self, delta: f32, _settings: &crate::settings::Settings) {
         // Energy consumption
         const ENERGY_CONSUMPTION_RATE: f32 = 10.0;
         self.energy -= delta * ENERGY_CONSUMPTION_RATE;

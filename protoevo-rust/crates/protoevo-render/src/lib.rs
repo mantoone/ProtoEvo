@@ -1,17 +1,14 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use bevy::render::render_asset::RenderAssets;
-use bevy::render::renderer::{RenderDevice, RenderQueue};
-use bevy::render::texture::GpuImage;
-use bevy::render::extract_resource::{ExtractResource, ExtractResourcePlugin};
-use bevy::render::{Render, RenderApp, RenderSet};
+use bevy::render::extract_resource::ExtractResourcePlugin;
 use bevy::window::PrimaryWindow;
 use protoevo_compute::ChemicalFieldCompute;
 use protoevo_core::biology::{PlantCell, Protozoan, MeatCell};
 use protoevo_core::physics::{PhysicsConfig, create_particle_bundle};
+use rand::Rng;
 
 mod cell_systems;
-use cell_systems::{update_cells, handle_cell_death};
+use cell_systems::{update_cells, handle_cell_death, handle_plant_reproduction};
 
 mod ui_systems;
 use ui_systems::{spawn_energy_bars, update_energy_bars};
@@ -23,17 +20,6 @@ mod feeding_systems;
 pub use feeding_systems::{handle_feeding, update_cell_sizes, Edible, Eater};
 
 pub struct RenderPlugin;
-
-// Chemical field resources (currently disabled)
-#[derive(Resource, Clone, ExtractResource)]
-struct ChemicalFieldImage {
-    handle: Handle<Image>,
-}
-
-#[derive(Resource)]
-struct ChemicalFieldResource {
-    compute: ChemicalFieldCompute,
-}
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
@@ -54,6 +40,7 @@ impl Plugin for RenderPlugin {
             protozoan_movement,
             handle_feeding,
             handle_cell_death,
+            handle_plant_reproduction,
             spawn_plant_visuals,
             spawn_protozoa_visuals,
             spawn_meat_visuals,
@@ -76,7 +63,6 @@ fn setup_window(mut commands: Commands) {
     // Spawn 2D camera
     commands.spawn(Camera2dBundle::default()).insert(CameraController {
         pan_sensitivity: 1.0,
-        zoom_sensitivity: 0.1,
         last_cursor_pos: None,
     });
 }
@@ -85,7 +71,6 @@ fn setup_window(mut commands: Commands) {
 #[derive(Component)]
 struct CameraController {
     pan_sensitivity: f32,
-    zoom_sensitivity: f32,
     last_cursor_pos: Option<Vec2>,
 }
 
@@ -125,10 +110,14 @@ fn spawn_plant_visuals(
     mut commands: Commands,
     query: Query<Entity, Added<PlantCell>>,
 ) {
+    let mut rng = rand::thread_rng();
     for entity in query.iter() {
+        let r = rng.gen_range(0.1..0.4);
+        let g = rng.gen_range(0.5..0.9);
+        let b = rng.gen_range(0.0..0.3);
         commands.entity(entity).insert(
             Sprite {
-                color: Color::srgb(0.2, 0.8, 0.2),
+                color: Color::srgb(r, g, b),
                 custom_size: Some(Vec2::new(10.0, 10.0)),
                 ..default()
             },

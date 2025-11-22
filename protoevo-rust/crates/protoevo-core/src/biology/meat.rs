@@ -30,7 +30,7 @@ impl MeatCell {
 }
 
 impl Cell for MeatCell {
-    fn update(&mut self, delta: f32) {
+    fn update(&mut self, delta: f32, _settings: &crate::settings::Settings) {
         self.decay(delta);
     }
     

@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use bevy::prelude::Resource;
 
 /// Main simulation settings structure
 /// Ported from Java SimulationSettings
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Resource)]
 pub struct Settings {
     pub simulation: SimulationSettings,
     pub worldgen: WorldGenSettings,
@@ -148,12 +149,30 @@ impl Default for ProtozoaSettings {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlantSettings {
     pub evolution_enabled: bool,
+    pub min_birth_radius: f32,
+    pub max_birth_radius: f32,
+    pub min_plant_growth: f32,
+    pub max_plant_growth: f32,
+    pub photosynthesize_energy_rate: f32,
+    pub construction_rate: f32,
+    pub collision_destruction_rate: f32,
+    pub min_health_to_split: f32,
+    pub gene_expression_interval: f32,
 }
 
 impl Default for PlantSettings {
     fn default() -> Self {
         Self {
             evolution_enabled: true,
+            min_birth_radius: 5.0,
+            max_birth_radius: 10.0,
+            min_plant_growth: 0.0,
+            max_plant_growth: 1.5,
+            photosynthesize_energy_rate: 300.0,
+            construction_rate: 10.0,
+            collision_destruction_rate: 0.1,
+            min_health_to_split: 0.15,
+            gene_expression_interval: 1.0,
         }
     }
 }
