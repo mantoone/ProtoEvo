@@ -59,9 +59,18 @@ impl Plugin for RenderPlugin {
             spawn_meat_visuals,
             spawn_energy_bars,
             update_energy_bars,
+            disable_gravity,
         ));
     }
 }
+
+fn disable_gravity(mut commands: Commands, query: Query<Entity, Added<RigidBody>>) {
+    for entity in query.iter() {
+        commands.entity(entity).insert(GravityScale(0.0));
+    }
+}
+
+
 
 fn setup_window(mut commands: Commands) {
     // Spawn 2D camera
